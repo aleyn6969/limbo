@@ -10,7 +10,8 @@ local HttpService = game:GetService("HttpService")
 local TextService = game:GetService("TextService")
 local RunService = game:GetService("RunService")
 
-local ConfigFolder = "LimboHubConfigs"
+local ConfigRoot = "LimboHub"
+local ConfigFolder = ConfigRoot .. "/default"
 
 -- Lucide icon set (https://lucide.dev) via latte-soft/lucide-roblox
 local Lucide
@@ -457,6 +458,9 @@ function ConfigSystem:UpdateAllThemeElements(newColor)
 end
 
 function ConfigSystem:EnsureFolder()
+    if not isfolder(ConfigRoot) then
+        makefolder(ConfigRoot)
+    end
     if not isfolder(ConfigFolder) then
         makefolder(ConfigFolder)
     end
@@ -909,6 +913,17 @@ function Limbo:CreateWindow(config)
     local Badges = config.Badges or {}
     local ConfigData = config.Config or {}
     local DiscordLink = config.Discord or (ConfigData and ConfigData.Discord) or "https://discord.gg/"
+
+    -- per-game config subfolder: LimboHub/<game>
+    do
+        local gameName = config.Game or (ConfigData and ConfigData.Game)
+        if not gameName or gameName == "" then
+            gameName = "Game_" .. tostring(game.PlaceId)
+        end
+        -- strip characters illegal in file paths
+        gameName = tostring(gameName):gsub('[/\\:%*%?"<>|]', "_")
+        ConfigFolder = ConfigRoot .. "/" .. gameName
+    end
 
     if ConfigSystem.ThemeColors[Theme] then
         ConfigSystem.CurrentTheme = Theme
@@ -4141,6 +4156,8 @@ function Limbo:CreateWindow(config)
     
     local AutoLoadToggle
     local autoLoadState = ConfigSystem:GetAutoLoad()
+    local LoadConfigDropdown
+    local DeleteConfigDropdown
 
     CreateButton(
         ConfigSection,
@@ -4207,7 +4224,7 @@ function Limbo:CreateWindow(config)
         end
     end
 
-    local LoadConfigDropdown =
+    LoadConfigDropdown =
         CreateDropdown(
         ConfigSection,
         "Load Config",
@@ -4230,7 +4247,7 @@ function Limbo:CreateWindow(config)
         "LoadConfigDropdown"
     )
 
-    local DeleteConfigDropdown =
+    DeleteConfigDropdown =
         CreateDropdown(
         ConfigSection,
         "Delete Config",
