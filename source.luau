@@ -1224,8 +1224,7 @@ function Limbo:CreateWindow(config)
 
     -- Profile card (avatar headshot + censored username) pinned to bottom of sidebar
     local ProfileFrame = Instance.new("Frame")
-    ProfileFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    ProfileFrame.BackgroundTransparency = 0.935
+    ProfileFrame.BackgroundTransparency = 1
     ProfileFrame.BorderSizePixel = 0
     ProfileFrame.AnchorPoint = Vector2.new(0, 1)
     ProfileFrame.Position = UDim2.new(0, 0, 1, 0)
@@ -1233,9 +1232,16 @@ function Limbo:CreateWindow(config)
     ProfileFrame.Name = "ProfileFrame"
     ProfileFrame.Parent = TabFrame
 
-    local ProfileCorner = Instance.new("UICorner")
-    ProfileCorner.CornerRadius = UDim.new(0, 4)
-    ProfileCorner.Parent = ProfileFrame
+    -- thin divider line above the profile card
+    local ProfileDivider = Instance.new("Frame")
+    ProfileDivider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    ProfileDivider.BackgroundTransparency = 0.85
+    ProfileDivider.BorderSizePixel = 0
+    ProfileDivider.AnchorPoint = Vector2.new(0.5, 0)
+    ProfileDivider.Position = UDim2.new(0.5, 0, 0, 0)
+    ProfileDivider.Size = UDim2.new(1, -12, 0, 1)
+    ProfileDivider.Name = "ProfileDivider"
+    ProfileDivider.Parent = ProfileFrame
 
     local themeColor = ConfigSystem.ThemeColors[ConfigSystem.CurrentTheme]
 
@@ -4464,7 +4470,7 @@ function Limbo:CreateWindow(config)
         MakeNotify({
             Title = "Limbo Hub",
             Description = "Loaded",
-            Content = "Successfully loaded! Enjoy.",
+            Content = "Successfully loaded.",
             Color = ConfigSystem.ThemeColors[ConfigSystem.CurrentTheme],
             Delay = 4
         })
