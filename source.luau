@@ -53,6 +53,9 @@ end
 local function CircleClick(Button, X, Y)
     spawn(
         function()
+            if not Button or not Button.Parent then
+                return
+            end
             Button.ClipsDescendants = true
             local Circle = Instance.new("ImageLabel")
             Circle.Image = "rbxassetid://266543268"
@@ -77,16 +80,21 @@ local function CircleClick(Button, X, Y)
             end
 
             local Time = 0.5
-            Circle:TweenSizeAndPosition(
-                UDim2.new(0, Size, 0, Size),
-                UDim2.new(0.5, -Size / 2, 0.5, -Size / 2),
-                "Out",
-                "Quad",
-                Time,
-                false,
-                nil
-            )
+            if Circle.Parent then
+                Circle:TweenSizeAndPosition(
+                    UDim2.new(0, Size, 0, Size),
+                    UDim2.new(0.5, -Size / 2, 0.5, -Size / 2),
+                    "Out",
+                    "Quad",
+                    Time,
+                    false,
+                    nil
+                )
+            end
             for i = 1, 10 do
+                if not Circle.Parent then
+                    break
+                end
                 Circle.ImageTransparency = Circle.ImageTransparency + 0.01
                 wait(Time / 10)
             end
