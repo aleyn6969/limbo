@@ -866,6 +866,30 @@ end
 function Limbo:CreateWindow(config)
     config = config or {}
     local Title = config.Title or "Limbo Hub"
+
+    -- Guard: prevent executing the script more than once per session.
+    local env = (getgenv and getgenv()) or _G
+    if env.LimboHubLoaded or CoreGui:FindFirstChild("LimboHub") then
+        MakeNotify({
+            Title = "Limbo Hub",
+            Description = "Blocked",
+            Content = "Limbo Hub is already running! Close it before executing again.",
+            Color = Color3.fromRGB(255, 80, 80),
+            Delay = 4
+        })
+        -- Return a no-op stub so the calling script's chained calls don't error.
+        local stub = {}
+        setmetatable(stub, {
+            __index = function()
+                return function()
+                    return stub
+                end
+            end
+        })
+        return stub
+    end
+    env.LimboHubLoaded = true
+
     local Theme = config.Theme or "Default"
     local Size = config.Size or UDim2.fromOffset(520, 420)
     local Center = config.Center ~= false
@@ -876,6 +900,7 @@ function Limbo:CreateWindow(config)
     local MinimizeButtonImage = config.MinimizeButton_Image or "rbxthumb://type=Asset&id=140257550869452&w=150&h=150"
     local Badges = config.Badges or {}
     local ConfigData = config.Config or {}
+    local DiscordLink = config.Discord or (ConfigData and ConfigData.Discord) or "https://discord.gg/"
 
     if ConfigSystem.ThemeColors[Theme] then
         ConfigSystem.CurrentTheme = Theme
@@ -4001,7 +4026,89 @@ function Limbo:CreateWindow(config)
     
     -- Create config tab elements
     local CurrentConfigName = ""
-    
+
+    -- Utilities section (above Config System)
+    local UtilitiesSection = CreateCollapsible(ConfigTabContainer, "Utilities", false)
+
+    do
+        -- FPS Boost: balanced mode (keeps visuals acceptable, lowers CPU/GPU load)
+        -- ponytail: only affects objects present when toggled ON, not ones spawned later
+        local saved = nil
+        local boostConns = {}
+
+        CreateToggle(
+            UtilitiesSection,
+            "FPS Boost",
+            "Balanced performance boost",
+            false,
+            function(state)
+                local Lighting = game:GetService("Lighting")
+                if state then
+                    saved = {
+                        shadows = Lighting.GlobalShadows,
+                        quality = settings().Rendering.QualityLevel,
+                        effects = {},
+                        particles = {}
+                    }
+                    Lighting.GlobalShadows = false
+                    for _, e in ipairs(Lighting:GetChildren()) do
+                        if e:IsA("BloomEffect") or e:IsA("SunRaysEffect") or e:IsA("DepthOfFieldEffect") then
+                            saved.effects[e] = e.Enabled
+                            e.Enabled = false
+                        end
+                    end
+                    for _, d in ipairs(workspace:GetDescendants()) do
+                        if d:IsA("ParticleEmitter") or d:IsA("Trail") or d:IsA("Smoke") or d:IsA("Fire") or d:IsA("Sparkles") then
+                            saved.particles[d] = d.Enabled
+                            d.Enabled = false
+                        end
+                    end
+                    pcall(function()
+                        settings().Rendering.QualityLevel = Enum.QualityLevel.Level05
+                    end)
+                elseif saved then
+                    Lighting.GlobalShadows = saved.shadows
+                    for e, v in pairs(saved.effects) do
+                        if e and e.Parent then e.Enabled = v end
+                    end
+                    for d, v in pairs(saved.particles) do
+                        if d and d.Parent then d.Enabled = v end
+                    end
+                    pcall(function()
+                        settings().Rendering.QualityLevel = saved.quality
+                    end)
+                    saved = nil
+                end
+            end,
+            nil
+        )
+
+        CreateToggle(
+            UtilitiesSection,
+            "Cap 60 FPS",
+            "Limit framerate to 60",
+            false,
+            function(state)
+                if setfpscap then
+                    setfpscap(state and 60 or 0)
+                end
+            end,
+            nil
+        )
+
+        CreateButton(
+            UtilitiesSection,
+            "Rejoin Server",
+            "Rejoin the current server",
+            "refresh-cw",
+            function()
+                pcall(function()
+                    game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer)
+                end)
+            end
+        )
+    end
+
     local ConfigSection = CreateCollapsible(ConfigTabContainer, "Config System", false)
     
     CreateParagraph(ConfigSection, "Configuration Settings", "Save, load, and manage your configs here.")
@@ -4150,13 +4257,62 @@ function Limbo:CreateWindow(config)
     LoadConfigDropdown:Refresh(initialConfigList)
     DeleteConfigDropdown:Refresh(initialConfigList)
 
-    -- Switch to first tab
-    SwitchToConfigTab()
+    -- Destroy UI section (after Config System)
+    local DestroySection = CreateCollapsible(ConfigTabContainer, "Destroy UI", false)
+    CreateButton(
+        DestroySection,
+        "Destroy UI",
+        "Close and unload Limbo Hub",
+        "trash-2",
+        function()
+            local scr = CoreGui:FindFirstChild("LimboHub")
+            if scr then scr:Destroy() end
+            local e = (getgenv and getgenv()) or _G
+            e.LimboHubLoaded = nil
+        end
+    )
+
+    -- Auto-generated Information tab (always present, above Settings)
+    local SwitchToInfoTab
+    do
+        local InfoTabContainer, switchInfo = CreateTabButton("Information", "info", false)
+        SwitchToInfoTab = switchInfo
+        CreateParagraph(InfoTabContainer, "Join Our Community", "Become part of the Limbo Hub community on Discord for the latest updates, script support, and exclusive releases. Copy the invite link below and join us today!")
+        CreateButton(
+            InfoTabContainer,
+            "Copy Discord Link",
+            "Copy the discord invite to clipboard",
+            "link",
+            function()
+                if setclipboard then
+                    setclipboard(DiscordLink)
+                    MakeNotify({
+                        Title = "Discord",
+                        Description = "Copied",
+                        Content = "Discord link copied to clipboard!",
+                        Color = ConfigSystem.ThemeColors[ConfigSystem.CurrentTheme],
+                        Delay = 3
+                    })
+                else
+                    MakeNotify({
+                        Title = "Discord",
+                        Description = "Error",
+                        Content = "Executor does not support clipboard.",
+                        Color = Color3.fromRGB(255, 80, 80),
+                        Delay = 3
+                    })
+                end
+            end
+        )
+    end
+
+    -- Switch to Information tab by default
+    SwitchToInfoTab()
 
     -- Window Methods
     local Window = {}
     
-    local firstUserTab = true
+    local firstUserTab = false
     function Window:CreateTab(tabName, iconId)
         local container, switchToTab = CreateTabButton(tabName, iconId, false)
         if firstUserTab then
@@ -4277,6 +4433,8 @@ function Limbo:CreateWindow(config)
     
     function Window:Destroy()
         ScreenGui:Destroy()
+        local e = (getgenv and getgenv()) or _G
+        e.LimboHubLoaded = nil
     end
 
     -- Auto-load: only runs if the user enabled the Auto Load toggle.
@@ -4299,6 +4457,17 @@ function Limbo:CreateWindow(config)
         else
             MakeNotify(notifyData)
         end
+    end)
+
+    -- Success notify on load
+    task.defer(function()
+        MakeNotify({
+            Title = "Limbo Hub",
+            Description = "Loaded",
+            Content = "Successfully loaded! Enjoy.",
+            Color = ConfigSystem.ThemeColors[ConfigSystem.CurrentTheme],
+            Delay = 4
+        })
     end)
 
     return Window
