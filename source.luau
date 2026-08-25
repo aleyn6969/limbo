@@ -15,12 +15,96 @@ local ConfigFolder = ConfigRoot .. "/default"
 
 -- Lucide icon set (https://lucide.dev) via latte-soft/lucide-roblox
 local Lucide
-do
+local LucideLoading = false
+local LucideLoadAttempted = false
+local PendingIcons = {}
+local LucideFallbackAssets = {
+    ["calendar"] = {"rbxassetid://16898612819", 355, 918, 48, 48},
+    ["chevron-down"] = {"rbxassetid://16898612819", 196, 918, 48, 48},
+    ["home"] = {"rbxassetid://16898613509", 820, 147, 48, 48},
+    ["info"] = {"rbxassetid://16898613509", 612, 869, 48, 48},
+    ["link"] = {"rbxassetid://16898613509", 918, 453, 48, 48},
+    ["mouse-pointer-click"] = {"rbxassetid://16898613613", 771, 710, 48, 48},
+    ["move-down-right"] = {"rbxassetid://16898613613", 820, 196, 48, 48},
+    ["refresh-cw"] = {"rbxassetid://16898613699", 404, 869, 48, 48},
+    ["search"] = {"rbxassetid://16898613699", 918, 857, 48, 48},
+    ["settings"] = {"rbxassetid://16898613777", 771, 257, 48, 48},
+    ["swords"] = {"rbxassetid://16898613777", 967, 759, 48, 48},
+    ["trash-2"] = {"rbxassetid://16898613869", 257, 918, 48, 48},
+    ["zap"] = {"rbxassetid://16898613869", 918, 906, 48, 48},
+}
+
+local function LoadLucide()
+    if Lucide then
+        return true
+    end
+    if LucideLoading then
+        return false
+    end
+    LucideLoading = true
+    LucideLoadAttempted = true
+
     local ok, lib = pcall(function()
         return loadstring(game:HttpGet("https://github.com/latte-soft/lucide-roblox/releases/download/0.1.3/lucide-roblox.luau"))()
     end)
-    if ok then
+    if ok and type(lib) == "table" and type(lib.GetAsset) == "function" then
         Lucide = lib
+    end
+
+    LucideLoading = false
+    return Lucide ~= nil
+end
+
+LoadLucide()
+
+local function ResolveIconAsset(iconId, size)
+    if not Lucide then
+        LoadLucide()
+    end
+    if not Lucide then
+        local fallback = LucideFallbackAssets[iconId]
+        if fallback then
+            return {
+                Url = fallback[1],
+                ImageRectOffset = Vector2.new(fallback[2], fallback[3]),
+                ImageRectSize = Vector2.new(fallback[4], fallback[5])
+            }
+        end
+        return nil
+    end
+    local ok, asset = pcall(Lucide.GetAsset, iconId, size or 48)
+    if ok and type(asset) == "table" and type(asset.Url) == "string" then
+        return asset
+    end
+    local fallback = LucideFallbackAssets[iconId]
+    if fallback then
+        return {
+            Url = fallback[1],
+            ImageRectOffset = Vector2.new(fallback[2], fallback[3]),
+            ImageRectSize = Vector2.new(fallback[4], fallback[5])
+        }
+    end
+    return nil
+end
+
+local function RetryPendingIcons()
+    if LucideLoading or #PendingIcons == 0 then
+        return
+    end
+    if not LoadLucide() then
+        return
+    end
+    local pending = PendingIcons
+    PendingIcons = {}
+    for _, item in ipairs(pending) do
+        if item.ImageLabel and item.ImageLabel.Parent then
+            local asset = ResolveIconAsset(item.IconId, item.Size)
+            if asset then
+                item.ImageLabel.Image = asset.Url
+                item.ImageLabel.ImageRectOffset = asset.ImageRectOffset or Vector2.zero
+                item.ImageLabel.ImageRectSize = asset.ImageRectSize or Vector2.zero
+            end
+        end
     end
 end
 
@@ -36,19 +120,27 @@ local function ApplyIcon(imageLabel, iconId, size)
     end
     if string.sub(iconId, 1, 4) == "rbx" or string.find(iconId, "://") then
         imageLabel.Image = iconId
+        imageLabel.ImageRectOffset = Vector2.zero
+        imageLabel.ImageRectSize = Vector2.zero
         return
     end
-    if Lucide then
-        local ok, asset = pcall(Lucide.GetAsset, iconId, size or 48)
-        if ok and asset then
-            imageLabel.Image = asset.Url
-            imageLabel.ImageRectOffset = asset.ImageRectOffset
-            imageLabel.ImageRectSize = asset.ImageRectSize
-            return
-        end
+    local asset = ResolveIconAsset(iconId, size)
+    if asset then
+        imageLabel.Image = asset.Url
+        imageLabel.ImageRectOffset = asset.ImageRectOffset or Vector2.zero
+        imageLabel.ImageRectSize = asset.ImageRectSize or Vector2.zero
+        return
     end
-    -- fallback: unknown name, leave blank rather than showing a broken asset
     imageLabel.Image = ""
+    imageLabel.ImageRectOffset = Vector2.zero
+    imageLabel.ImageRectSize = Vector2.zero
+    PendingIcons[#PendingIcons + 1] = {ImageLabel = imageLabel, IconId = iconId, Size = size or 48}
+    if not LucideLoadAttempted then
+        task.defer(RetryPendingIcons)
+    else
+        task.delay(1, RetryPendingIcons)
+        task.delay(3, RetryPendingIcons)
+    end
 end
 
 local function CircleClick(Button, X, Y)
@@ -909,7 +1001,7 @@ function Limbo:CreateWindow(config)
     local Resizable = config.Resize or false
     local MinimizeKey = config.MinimizeKey or Enum.KeyCode.RightShift
     local MinimizeButton = config.MinimizeButton or false
-    local MinimizeButtonImage = config.MinimizeButton_Image or "rbxthumb://type=Asset&id=140257550869452&w=150&h=150"
+    local MinimizeButtonImage = config.MinimizeButton_Image or "rbxthumb://type=Asset&id=129235095138183&w=150&h=150"
     local Badges = config.Badges or {}
     local ConfigData = config.Config or {}
     local DiscordLink = config.Discord or (ConfigData and ConfigData.Discord) or "https://discord.gg/"
