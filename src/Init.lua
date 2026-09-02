@@ -357,6 +357,11 @@ function WindUI:CreateWindow(Config)
 				if isValid then
 					CanLoadWindow = true
 				else
+					-- A persisted key is only a convenience cache. If the API rejects it
+					-- (expired/revoked/invalid), delete it and fail closed into the gate.
+					if delfile and isfile(keyPath) then
+						pcall(delfile, keyPath)
+					end
 					loadKeysystem()
 				end
 			else

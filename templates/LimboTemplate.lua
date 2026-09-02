@@ -142,7 +142,10 @@ local Window = LimboUI:CreateWindow({
 		Title = "Limbo Hub Access",
 		Note = "Enter your access key to continue. Your key is validated securely through the Limbo Hub API.",
 		URL = GET_KEY_URL,
-		SaveKey = false,
+		-- Persist the accepted key for convenience, but never trust it locally:
+		-- CreateWindow re-runs KeyValidator on every execute/rejoin. Expired or
+		-- revoked keys fail closed and return the user to this key window.
+		SaveKey = true,
 		KeyValidator = ValidateKey,
 	},
 
