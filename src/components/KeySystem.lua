@@ -192,7 +192,15 @@ function KeySystem.new(Config, Filename, func, keyValidator)
 
 	local ExitButton = CreateButton("Exit", "log-out", function()
 		KeyDialog:Close()()
-	end, "Tertiary", ButtonsContainer.Frame)
+	end, "NeutralSubtle", ButtonsContainer.Frame, nil, false, 7)
+	-- DynamicShape assigns the generic Button theme tag internally. Detach these
+	-- two key-gate fills from that magenta token and pin true-neutral Limbo greys.
+	local ExitFill = ExitButton:FindFirstChild("Squircle", true)
+	if ExitFill then
+		Creator.Objects[ExitFill] = nil
+		ExitFill.ImageColor3 = Color3.fromHex("#1C1C1C")
+		ExitFill.ImageTransparency = 0
+	end
 
 	if ThumbnailFrame then
 		ExitButton.Parent = ThumbnailFrame
@@ -487,7 +495,13 @@ function KeySystem.new(Config, Filename, func, keyValidator)
 				})
 			end
 		end
-	end, "Primary", ButtonsContainer)
+	end, "NeutralStrong", ButtonsContainer, nil, false, 7)
+	local SubmitFill = SubmitButton:FindFirstChild("Squircle", true)
+	if SubmitFill then
+		Creator.Objects[SubmitFill] = nil
+		SubmitFill.ImageColor3 = Color3.fromHex("#2A2A2A")
+		SubmitFill.ImageTransparency = 0
+	end
 
 	SubmitButton.AnchorPoint = Vector2.new(1, 0.5)
 	SubmitButton.Position = UDim2.new(1, 0, 0.5, 0)
