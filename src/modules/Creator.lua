@@ -14,7 +14,7 @@ local RenderStepped = RunService.Heartbeat
 
 local IconsURL = "https://raw.githubusercontent.com/Footagesus/Icons/main/Main-v2.lua"
 
-local Icons = require("../Icons/Main-v2")
+local Icons = require("./IconsOptimized")
 
 Icons.SetIconsType("lucide")
 

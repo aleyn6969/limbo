@@ -1,37 +1,8 @@
---[[
-	Limbo Hub — project template
-	=============================
-
-	Copy this file as the starting point for a new script. It contains the
-	settled Limbo Hub window configuration (geometry, logo, launcher, theme)
-	plus a Settings tab that only carries the Configuration panel.
-
-	Loader:  replace LIMBO_SOURCE with the raw URL of your built dist/main.lua.
-	Folder:  keep one folder name per project; configs live in
-	         LimboHUB/<Game Name>/Config/ regardless of this value.
-
-	Add features with Sections (collapsible, closed by default, text-only):
-
-		local Combat = Main:Section({ Title = "Combat" })
-		Combat:Toggle({ Title = "Auto Attack", Flag = "autoAttack" })
-
-	Always pass a `Flag` to anything that should survive a save/load.
-]]
-
 local LIMBO_SOURCE = "https://raw.githubusercontent.com/aleyn6969/limbo/refs/heads/main/dist/main.lua"
-
--- Change these two lines per project. Everything else (console log, notify,
--- window title) reads from them, so the name/version live in one place.
 local GAME_NAME = "Baseplate"
 local VERSION = "1.0.0"
-
--- Replace this placeholder with your production validator endpoint. The
--- endpoint must accept the JSON payload below and return { "valid": true }
--- only for an authorised key. Network/API failures always fail closed.
 local KEY_API_URL = "https://domain.com/api/validate"
 local GET_KEY_URL = "https://domain.com/get-key"
-
--- Limbo Hub decal, used for the titlebar, launcher and the load notification.
 local LIMBO_LOGO = "rbxthumb://type=Asset&id=93432513909214&w=420&h=420"
 
 local function GetExecutorRequest()
@@ -69,8 +40,6 @@ local function ValidateKey(key)
 				Body = body,
 			})
 		end
-
-		-- Fallback for environments exposing Roblox's HttpPost directly.
 		return {
 			StatusCode = 200,
 			Body = game:HttpPost(KEY_API_URL, body, Enum.HttpContentType.ApplicationJson),
@@ -95,12 +64,10 @@ local function ValidateKey(key)
 end
 
 local function LoadLibrary()
-	local url = LIMBO_SOURCE
-	if url:find("^http") then
-		-- Roblox caches HttpGet per exact URL, so bust it during development.
-		local sep = url:find("%?") and "&" or "?"
-		url = url .. sep .. "v=" .. tostring(os.time()) .. "-" .. tostring(math.random(1, 1e9))
-	end
+	-- Stable versioned URL lets the executor/CDN reuse its HTTP cache. The old
+	-- timestamp+random query forced a fresh 1.3MB download on every execute.
+	local separator = LIMBO_SOURCE:find("%?") and "&" or "?"
+	local url = LIMBO_SOURCE .. separator .. "v=" .. VERSION
 
 	local source = game:HttpGet(url)
 	assert(#source > 0, "Limbo Hub: library source is empty")
@@ -108,7 +75,6 @@ local function LoadLibrary()
 	return factory()
 end
 
--- Tear down a previous run so re-executing the script never stacks two GUIs.
 if getgenv().LimboHub and getgenv().LimboHub.Destroy then
 	pcall(function()
 		getgenv().LimboHub:Destroy()
@@ -119,14 +85,11 @@ end
 local LimboUI = LoadLibrary()
 assert(LimboUI and type(LimboUI.CreateWindow) == "function", "Limbo Hub: library did not return its API")
 
--- / Window /
-
 local Window = LimboUI:CreateWindow({
 	Title = "Limbo Hub",
 	Subtitle = GAME_NAME,
 	Version = "v" .. VERSION,
 	ShowExecutor = true,
-	-- Faint transparent artwork behind the main content pane.
 	Watermark = "https://raw.githubusercontent.com/aleyn6969/limbo/refs/heads/main/assets/limbo-watermark-v2.png",
 	WatermarkTransparency = 0.94,
 	WatermarkSize = 285,
@@ -136,15 +99,10 @@ local Window = LimboUI:CreateWindow({
 	Folder = "LimboHub",
 	Theme = "Limbo",
 
-	-- This gate is created before the main window. CreateWindow blocks here
-	-- until KeyValidator returns true, so features never flash before auth.
 	KeySystem = {
 		Title = "Limbo Hub Access",
-		Note = "Enter your access key to continue. Your key is validated securely through the Limbo Hub API.",
+		Note = "Get a free key to start using Limbo Hub, or buy a premium key for instant access without the hassle",
 		URL = GET_KEY_URL,
-		-- Persist the accepted key for convenience, but never trust it locally:
-		-- CreateWindow re-runs KeyValidator on every execute/rejoin. Expired or
-		-- revoked keys fail closed and return the user to this key window.
 		SaveKey = true,
 		KeyValidator = ValidateKey,
 	},
@@ -188,9 +146,6 @@ local Window = LimboUI:CreateWindow({
 
 getgenv().LimboHub = Window
 
--- / Tabs /
-
--- Information is intentionally first and becomes the landing page on load.
 local Information = Window:Tab({
 	Title = "Information",
 	Icon = "info",
@@ -205,8 +160,6 @@ local Settings = Window:Tab({
 	Title = "Settings",
 	Icon = "settings",
 })
-
--- / Information — add project identity/help here /
 
 local DISCORD_INVITE = "https://discord.gg/GtDHsXGJ4g"
 
@@ -241,28 +194,12 @@ Information:Paragraph({
 	},
 })
 
--- / Main — add project features here /
-
--- local Example = Main:Section({ Title = "Example" })
---
--- Example:Toggle({
--- 	Title = "Enabled",
--- 	Desc = "Turn the feature on",
--- 	Default = false,
--- 	Flag = "exampleEnabled",
--- 	Callback = function(state) end,
--- })
-
--- / Settings — Configuration only /
-
 local Configuration = Settings:Section({ Title = "Configuration" })
 
 Window:ConfigPanel(Configuration)
 
--- Information is tab #1, so every fresh execution lands there.
 Window:SelectTab(1)
 
--- Console line + first-run toast so users know the script actually injected.
 print(string.format("[LimboHUB] %s Version %s Loaded", GAME_NAME, VERSION))
 
 LimboUI:Notify({
