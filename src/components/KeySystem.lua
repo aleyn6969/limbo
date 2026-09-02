@@ -17,7 +17,7 @@ function KeySystem.new(Config, Filename, func, keyValidator)
 
 	local ThumbnailSize = (Config.KeySystem.Thumbnail and Config.KeySystem.Thumbnail.Width) or 200
 
-	local UISize = 430
+	local UISize = 390
 	if Config.KeySystem.Thumbnail and Config.KeySystem.Thumbnail.Image then
 		UISize = 430 + (ThumbnailSize / 2)
 	end
@@ -42,7 +42,7 @@ function KeySystem.new(Config, Filename, func, keyValidator)
 		ThemeTag = {
 			TextColor3 = "Text",
 		},
-		TextSize = 20,
+		TextSize = 15,
 	})
 
 	local KeySystemTitle = New("TextLabel", {
@@ -98,8 +98,8 @@ function KeySystem.new(Config, Filename, func, keyValidator)
 			FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
 			TextXAlignment = "Left",
 			Text = Config.KeySystem.Note,
-			TextSize = 18,
-			TextTransparency = 0.4,
+			TextSize = 11,
+			TextTransparency = 0.25,
 			ThemeTag = {
 				TextColor3 = "Text",
 			},
@@ -110,7 +110,7 @@ function KeySystem.new(Config, Filename, func, keyValidator)
 	end
 
 	local ButtonsContainer = New("Frame", {
-		Size = UDim2.new(1, 0, 0, 42),
+		Size = UDim2.new(1, 0, 0, 34),
 		BackgroundTransparency = 1,
 	}, {
 		New("Frame", {
@@ -170,7 +170,7 @@ function KeySystem.new(Config, Filename, func, keyValidator)
 			BackgroundTransparency = 1,
 		}, {
 			New("UIListLayout", {
-				Padding = UDim.new(0, 18),
+				Padding = UDim.new(0, 12),
 				FillDirection = "Vertical",
 			}),
 			TitleContainer,
@@ -178,10 +178,10 @@ function KeySystem.new(Config, Filename, func, keyValidator)
 			InputFrame,
 			ButtonsContainer,
 			New("UIPadding", {
-				PaddingTop = UDim.new(0, 16),
-				PaddingLeft = UDim.new(0, 16),
-				PaddingRight = UDim.new(0, 16),
-				PaddingBottom = UDim.new(0, 16),
+				PaddingTop = UDim.new(0, 14),
+				PaddingLeft = UDim.new(0, 14),
+				PaddingRight = UDim.new(0, 14),
+				PaddingBottom = UDim.new(0, 14),
 			}),
 		}),
 	})

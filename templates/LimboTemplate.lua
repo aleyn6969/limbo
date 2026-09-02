@@ -25,8 +25,73 @@ local LIMBO_SOURCE = "https://raw.githubusercontent.com/aleyn6969/limbo/refs/hea
 local GAME_NAME = "Baseplate"
 local VERSION = "1.0.0"
 
+-- Replace this placeholder with your production validator endpoint. The
+-- endpoint must accept the JSON payload below and return { "valid": true }
+-- only for an authorised key. Network/API failures always fail closed.
+local KEY_API_URL = "https://domain.com/api/validate"
+
 -- Limbo Hub decal, used for the titlebar, launcher and the load notification.
 local LIMBO_LOGO = "rbxthumb://type=Asset&id=93432513909214&w=420&h=420"
+
+local function GetExecutorRequest()
+	return (syn and syn.request)
+		or (http and http.request)
+		or http_request
+		or request
+end
+
+local function ValidateKey(key)
+	key = tostring(key or "")
+	if key == "" or key == "empty" then
+		return false
+	end
+
+	local payload = {
+		key = key,
+		gameId = game.GameId,
+		placeId = game.PlaceId,
+		userId = game:GetService("Players").LocalPlayer.UserId,
+		executor = (identifyexecutor and select(1, identifyexecutor())) or "Unknown",
+	}
+
+	local ok, response = pcall(function()
+		local body = game:GetService("HttpService"):JSONEncode(payload)
+		local requestFn = GetExecutorRequest()
+		if requestFn then
+			return requestFn({
+				Url = KEY_API_URL,
+				Method = "POST",
+				Headers = {
+					["Content-Type"] = "application/json",
+					["Accept"] = "application/json",
+				},
+				Body = body,
+			})
+		end
+
+		-- Fallback for environments exposing Roblox's HttpPost directly.
+		return {
+			StatusCode = 200,
+			Body = game:HttpPost(KEY_API_URL, body, Enum.HttpContentType.ApplicationJson),
+		}
+	end)
+
+	if not ok or type(response) ~= "table" then
+		warn("[LimboHUB] Key API request failed")
+		return false
+	end
+
+	local status = tonumber(response.StatusCode or response.Status or 0) or 0
+	if status < 200 or status >= 300 then
+		warn("[LimboHUB] Key API returned HTTP " .. tostring(status))
+		return false
+	end
+
+	local decodedOk, decoded = pcall(function()
+		return game:GetService("HttpService"):JSONDecode(response.Body or response.body or "")
+	end)
+	return decodedOk and type(decoded) == "table" and decoded.valid == true
+end
 
 local function LoadLibrary()
 	local url = LIMBO_SOURCE
@@ -69,6 +134,15 @@ local Window = LimboUI:CreateWindow({
 	IconSize = 26,
 	Folder = "LimboHub",
 	Theme = "Limbo",
+
+	-- This gate is created before the main window. CreateWindow blocks here
+	-- until KeyValidator returns true, so features never flash before auth.
+	KeySystem = {
+		Title = "Limbo Hub Access",
+		Note = "Enter your access key to continue. Your key is validated securely through the Limbo Hub API.",
+		SaveKey = false,
+		KeyValidator = ValidateKey,
+	},
 
 	Size = UDim2.fromOffset(620, 388),
 	MinSize = Vector2.new(540, 350),

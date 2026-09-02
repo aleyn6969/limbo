@@ -17,7 +17,29 @@ loadstring(game:HttpGet(
 ))()
 ```
 
-The template opens **Information** by default and includes:
+The template first opens a **Key System** gate. The main Information/Main/Settings window is only created after the configured validation API returns `{ "valid": true }`.
+
+Configure the placeholder in `templates/LimboTemplate.lua`:
+
+```luau
+local KEY_API_URL = "https://domain.com/api/validate"
+```
+
+Expected request body:
+
+```json
+{"key":"...","gameId":0,"placeId":0,"userId":0,"executor":"..."}
+```
+
+Expected successful response:
+
+```json
+{"valid":true}
+```
+
+All API errors, non-2xx status codes, malformed JSON, and `{ "valid": false }` responses fail closed and keep the feature window locked.
+
+After validation, the template opens **Information** by default and includes:
 
 - Limbo Hub branding and transparent watermark
 - Information / Main / Settings navigation
