@@ -190,8 +190,20 @@ function KeySystem.new(Config, Filename, func, keyValidator)
 	--     CreateButton(values.Title, values.Icon, values.Callback, values.Variant)
 	-- end
 
-	local ExitButton = CreateButton("Exit", "log-out", function()
-		KeyDialog:Close()()
+	local ExitButton = CreateButton("Get Key Freemium", "key", function()
+		local getKeyUrl = Config.KeySystem.URL
+		local copy = setclipboard or toclipboard
+		if copy and getKeyUrl then
+			copy(getKeyUrl)
+			Config.WindUI:Notify({
+				Title = "Limbo HUB",
+				Content = "Get key link copied",
+				Icon = "key",
+				Duration = 2.5,
+			})
+		elseif getKeyUrl then
+			warn("[LimboHUB] Clipboard API is unavailable: " .. tostring(getKeyUrl))
+		end
 	end, "NeutralSubtle", ButtonsContainer.Frame, nil, false, 7)
 	-- DynamicShape assigns the generic Button theme tag internally. Detach these
 	-- two key-gate fills from that magenta token and pin true-neutral Limbo greys.
@@ -207,12 +219,6 @@ function KeySystem.new(Config, Filename, func, keyValidator)
 		ExitButton.Size = UDim2.new(0, 0, 0, 42)
 		ExitButton.Position = UDim2.new(0, 10, 1, -10)
 		ExitButton.AnchorPoint = Vector2.new(0, 1)
-	end
-
-	if Config.KeySystem.URL then
-		CreateButton("Get key", "key", function()
-			setclipboard(Config.KeySystem.URL)
-		end, "Secondary", ButtonsContainer.Frame)
 	end
 
 	if Config.KeySystem.API then

@@ -29,6 +29,7 @@ local VERSION = "1.0.0"
 -- endpoint must accept the JSON payload below and return { "valid": true }
 -- only for an authorised key. Network/API failures always fail closed.
 local KEY_API_URL = "https://domain.com/api/validate"
+local GET_KEY_URL = "https://domain.com/get-key"
 
 -- Limbo Hub decal, used for the titlebar, launcher and the load notification.
 local LIMBO_LOGO = "rbxthumb://type=Asset&id=93432513909214&w=420&h=420"
@@ -140,6 +141,7 @@ local Window = LimboUI:CreateWindow({
 	KeySystem = {
 		Title = "Limbo Hub Access",
 		Note = "Enter your access key to continue. Your key is validated securely through the Limbo Hub API.",
+		URL = GET_KEY_URL,
 		SaveKey = false,
 		KeyValidator = ValidateKey,
 	},
