@@ -1,4 +1,3 @@
-# Limbo Hub UI
 
 A compact, dark Roblox Luau UI library customized from WindUI. Limbo Hub includes a two-line branded header, executor/version badges, compact sidebar navigation, configuration persistence, transparent watermark support, notifications, and a draggable reopen launcher.
 
