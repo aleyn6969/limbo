@@ -39,6 +39,7 @@ function Element:New(Config)
 		AllowNone = Config.AllowNone,
 		SearchBarEnabled = Config.SearchBarEnabled or false,
 		Multi = Config.Multi,
+		EmptyText = Config.EmptyText,
 		Callback = Config.Callback or nil,
 
 		UIElements = {},
@@ -67,6 +68,7 @@ function Element:New(Config)
 		Window = Config.Window,
 		ElementTable = Dropdown,
 		ParentConfig = Config,
+		Size = Config.Size,
 		Tags = Config.Tags,
 	})
 

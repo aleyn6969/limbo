@@ -169,7 +169,11 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 		end
 
 		if Dropdown.UIElements.Dropdown then
-			Dropdown.UIElements.Dropdown.Frame.Frame.TextLabel.Text = (Str == "" and "--" or Str)
+			-- Limbo Hub: show an empty box when nothing is selected. WindUI's
+			-- "--" placeholder reads like a real value and confused users into
+			-- thinking a profile was already chosen.
+			local EmptyText = Dropdown.EmptyText or ""
+			Dropdown.UIElements.Dropdown.Frame.Frame.TextLabel.Text = (Str == "" and EmptyText or Str)
 		end
 	end
 

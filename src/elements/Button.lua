@@ -8,7 +8,10 @@ function Element:New(Config)
 		__type = "Button",
 		Title = Config.Title or "Button",
 		Desc = Config.Desc or nil,
-		Icon = Config.Icon or "mouse-pointer-click",
+		-- Limbo Hub: pass Icon = false to render a text-only button. WindUI
+		-- always forced the "mouse-pointer-click" glyph, which reads as noise
+		-- on rows whose whole surface is already clickable.
+		Icon = Config.Icon == nil and "mouse-pointer-click" or Config.Icon,
 		IconThemed = Config.IconThemed or false,
 		IconColor = Config.IconColor or nil,
 		Color = Config.Color,
@@ -57,28 +60,31 @@ function Element:New(Config)
 	--         ImageColor3 = "Text"
 	--     }
 	-- })
-	Button.UIElements.ButtonIcon = Creator.Image(
-		Button.Icon,
-		Button.Icon,
-		0,
-		Config.Window.Folder,
-		"Button",
-		not (Button.Color or Button.IconColor) and true or nil,
-		Button.IconThemed
-	)
+	if Button.Icon then
+		Button.UIElements.ButtonIcon = Creator.Image(
+			Button.Icon,
+			Button.Icon,
+			0,
+			Config.Window.Folder,
+			"Button",
+			not (Button.Color or Button.IconColor) and true or nil,
+			Button.IconThemed
+		)
 
-	if Button.IconColor then
-		Button.UIElements.ButtonIcon.ImageLabel.ImageColor3 = Button.IconColor
+		if Button.IconColor then
+			Button.UIElements.ButtonIcon.ImageLabel.ImageColor3 = Button.IconColor
+		end
+
+		Button.UIElements.ButtonIcon.Size = UDim2.new(0, 20, 0, 20)
+		Button.UIElements.ButtonIcon.Parent = Button.Justify == "Between"
+				and Button.ButtonFrame.UIElements.Main
+			or Button.ButtonFrame.UIElements.Container.TitleFrame
+		Button.UIElements.ButtonIcon.LayoutOrder = Button.IconAlign == "Left" and -99999 or 99999
+		Button.UIElements.ButtonIcon.AnchorPoint = Vector2.new(1, 0.5)
+		Button.UIElements.ButtonIcon.Position = UDim2.new(1, 0, 0.5, 0)
+
+		Button.ButtonFrame:Colorize(Button.UIElements.ButtonIcon.ImageLabel, "ImageColor3")
 	end
-
-	Button.UIElements.ButtonIcon.Size = UDim2.new(0, 20, 0, 20)
-	Button.UIElements.ButtonIcon.Parent = Button.Justify == "Between" and Button.ButtonFrame.UIElements.Main
-		or Button.ButtonFrame.UIElements.Container.TitleFrame
-	Button.UIElements.ButtonIcon.LayoutOrder = Button.IconAlign == "Left" and -99999 or 99999
-	Button.UIElements.ButtonIcon.AnchorPoint = Vector2.new(1, 0.5)
-	Button.UIElements.ButtonIcon.Position = UDim2.new(1, 0, 0.5, 0)
-
-	Button.ButtonFrame:Colorize(Button.UIElements.ButtonIcon.ImageLabel, "ImageColor3")
 
 	function Button:Lock()
 		Button.Locked = true

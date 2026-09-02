@@ -1,39 +1,40 @@
-<!--<h1 align="center">WindUI</h1> -->
+# Limbo Hub UI
 
-<!--
-<picture>
-    <source srcset="docs/banner-dark.webp" media="(prefers-color-scheme: dark)">
-    <source srcset="docs/banner-light.webp" media="(prefers-color-scheme: light)">
-    <img src="docs/banner-light.webp" alt="WindUI Banner">
-</picture>-->
+A compact, dark Roblox Luau UI library customized from WindUI. Limbo Hub includes a two-line branded header, executor/version badges, compact sidebar navigation, configuration persistence, transparent watermark support, notifications, and a draggable reopen launcher.
 
-<img src="docs/WindUI – Themes.png" alt="WindUI Banner">
+## Load the library
 
-[![Wind Ui](https://uibin.orqan.xyz/api/card?id=341a345c-b3c9-42fe-a45c-eb296580ce61&theme=green)](https://uibin.orqan.xyz/library/341a345c-b3c9-42fe-a45c-eb296580ce61)
+```luau
+local LimboUI = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/aleyn6969/limbo/refs/heads/main/dist/main.lua"
+))()
+```
 
-> [!WARNING]
-> This WindUI was not inspired by, and the name has nothing to do with UI Frameworks
+## Run the reusable template
 
-> [!WARNING]
-> WindUI is currently in Beta.
-> This project is still under active development. Bugs, issues, and unstable features may occur. We’re constantly working on improvements, so please be patient and report any problems you encounter.
+```luau
+loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/aleyn6969/limbo/refs/heads/main/templates/LimboTemplate.lua"
+))()
+```
 
-## Credits
+The template opens **Information** by default and includes:
 
-#### Icons (https://github.com/Footagesus/Icons)
+- Limbo Hub branding and transparent watermark
+- Information / Main / Settings navigation
+- Discord community paragraph and copy action
+- Per-game config persistence under `LimboHUB/<Game Name>/Config/`
+- Save, load, delete, and auto-load profile controls
 
-- [Lucide-Icons](https://github.com/lucide-icons/lucide)
-- [Craft Icons](https://www.figma.com/community/file/1415718327120418204)
-- [Geist Icons](https://vercel.com/geist/icons)
-- [Solar Icons](https://icones.js.org/collection/solar)
-- [SF Symbols](https://sf-symbols-one.vercel.app/)
+## Development
 
-### Links
+```bash
+npm install
+npm run build
+```
 
-- [Discord Server](https://discord.gg/ftgs-development-hub-1300692552005189632)
-- [Documentation](https://footagesus.github.io/treehub-web/docs/windui)
-- [Installation](https://footagesus.github.io/WindUI-Docs/docs/installation)
-- [Example](/main_example.lua) (wip)
-    ```luau
-    loadstring(game:HttpGet('https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/main_example.lua'))()
-    ```
+The production bundle is written to `dist/main.lua`.
+
+## Credits and license
+
+Limbo Hub UI is based on [WindUI](https://github.com/Footagesus/WindUI) by Footagesus and remains available under the MIT License. Icons are supplied by the upstream icon package, including Lucide Icons.

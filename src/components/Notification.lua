@@ -65,7 +65,8 @@ function NotificationModule.New(Config)
         Notification.CanClose = true
     end--]]
 	NotificationModule.NotificationIndex = NotificationModule.NotificationIndex + 1
-	NotificationModule.Notifications[NotificationModule.NotificationIndex] = Notification
+	local NotificationId = NotificationModule.NotificationIndex
+	NotificationModule.Notifications[NotificationId] = Notification
 
 	-- local UIStroke = New("UIStroke", {
 	--     ThemeTag = {
@@ -166,13 +167,13 @@ function NotificationModule.New(Config)
 			TextXAlignment = "Left",
 			RichText = true,
 			BackgroundTransparency = 1,
-			TextSize = 18,
+			TextSize = 15,
 			ThemeTag = {
 				TextColor3 = "NotificationTitle",
 				TextTransparency = "NotificationTitleTransparency",
 			},
 			Text = Notification.Title,
-			FontFace = Font.new(Creator.Font, Enum.FontWeight.SemiBold),
+			FontFace = Font.new(Creator.Font, Enum.FontWeight.Bold),
 		}),
 		New("UIListLayout", {
 			Padding = UDim.new(0, NotificationModule.UIPadding / 3),
@@ -188,7 +189,7 @@ function NotificationModule.New(Config)
 			RichText = true,
 			BackgroundTransparency = 1,
 			--TextTransparency = .4,
-			TextSize = 15,
+			TextSize = 13,
 			ThemeTag = {
 				TextColor3 = "NotificationContent",
 				TextTransparency = "NotificationContentTransparency",
@@ -215,6 +216,16 @@ function NotificationModule.New(Config)
 			ThemeTag = {
 				ImageColor3 = "Notification2",
 				ImageTransparency = "Notification2Transparency",
+			},
+		}),
+		-- Limbo Hub: accent outline. The NotificationBorder theme token existed
+		-- but was never rendered by WindUI, so the card had no border at all.
+		Creator.NewRoundFrame(NotificationModule.UICorner, "Squircle-Outline", {
+			Size = UDim2.new(1, 0, 1, 0),
+			Name = "Border",
+			ThemeTag = {
+				ImageColor3 = "NotificationBorder",
+				ImageTransparency = "NotificationBorderTransparency",
 			},
 		}),
 		New("Frame", {
@@ -270,29 +281,32 @@ function NotificationModule.New(Config)
 	function Notification:Close()
 		if not Notification.Closed then
 			Notification.Closed = true
+			-- Limbo Hub: snappier exit (was 0.45/0.55s, which felt sluggish).
 			Tween(
 				MainContainer,
-				0.45,
+				0.2,
 				{ Size = UDim2.new(1, 0, 0, -8) },
 				Enum.EasingStyle.Quint,
 				Enum.EasingDirection.Out
 			):Play()
-			Tween(Main, 0.55, { Position = UDim2.new(2, 0, 1, 0) }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
-			task.wait(0.45)
+			Tween(Main, 0.24, { Position = UDim2.new(2, 0, 1, 0) }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+			task.wait(0.2)
 			MainContainer:Destroy()
+			NotificationModule.Notifications[NotificationId] = nil
 		end
 	end
 
 	task.spawn(function()
 		task.wait()
+		-- Limbo Hub: snappier entry (was 0.45s).
 		Tween(
 			MainContainer,
-			0.45,
+			0.22,
 			{ Size = UDim2.new(1, 0, 0, Main.AbsoluteSize.Y) },
 			Enum.EasingStyle.Quint,
 			Enum.EasingDirection.Out
 		):Play()
-		Tween(Main, 0.45, { Position = UDim2.new(0, 0, 1, 0) }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+		Tween(Main, 0.22, { Position = UDim2.new(0, 0, 1, 0) }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
 		if Notification.Duration then
 			Duration.Size = UDim2.new(0, Main.DurationFrame.AbsoluteSize.X, 1, 0)
 			Tween(

@@ -1,5 +1,133 @@
 return function(WindUI, Creator)
 	return {
+		--[[
+			Limbo — dark utilitarian theme.
+			Two-color system: near-black grayscale ramp + a single neon magenta accent.
+			Grayscale ramp:  #0B0B0B  bg
+			                 #141414  sidebar / dialog
+			                 #1C1C1C  element rows
+			                 #232323  active / hover
+			                 #2A2A2A  borders
+			Accent:          #FF00E0
+		]]
+		Limbo = {
+			Name = "Limbo",
+
+			-- core surfaces
+			Background = Color3.fromHex("#0B0B0B"),
+			BackgroundTransparency = 0,
+			Accent = Color3.fromHex("#141414"),
+			Dialog = Color3.fromHex("#141414"),
+			Outline = Color3.fromHex("#2A2A2A"),
+
+			-- text
+			Text = Color3.fromHex("#FFFFFF"),
+			Placeholder = Color3.fromHex("#A0A0A0"),
+			Icon = Color3.fromHex("#B5B5B5"),
+
+			-- accent
+			Primary = Color3.fromHex("#FF00E0"),
+			Button = Color3.fromHex("#FF00E0"),
+			Toggle = Color3.fromHex("#FF00E0"),
+			Slider = Color3.fromHex("#FF00E0"),
+			Checkbox = Color3.fromHex("#FF00E0"),
+
+			-- flat hover: no white wash, step up the grayscale ramp instead
+			Hover = Color3.fromHex("#232323"),
+
+			-- panel (content pane) matches window bg -> seamless, no floating card
+			PanelBackground = Color3.fromHex("#0B0B0B"),
+			PanelBackgroundTransparency = 0,
+
+			-- element rows
+			ElementBackground = Color3.fromHex("#1C1C1C"),
+			ElementBackgroundTransparency = 0,
+			ElementBackgroundHover = Color3.fromHex("#232323"),
+
+			-- sidebar tabs: flat fills, magenta carried by the edge indicator
+			TabBackground = Color3.fromHex("#141414"),
+			TabBackgroundHover = Color3.fromHex("#1C1C1C"),
+			TabBackgroundHoverTransparency = 0,
+			TabBackgroundActive = Color3.fromHex("#232323"),
+			TabBackgroundActiveTransparency = 0,
+			TabBorder = Color3.fromHex("#2A2A2A"),
+			TabBorderTransparency = 1,
+			TabBorderTransparencyActive = 1,
+			TabText = Color3.fromHex("#FFFFFF"),
+			-- Limbo Hub: brighter inactive nav text — the old 0.35 sat under the
+			-- WCAG floor on a near-black rail.
+			TabTextTransparency = 0.18,
+			TabTextTransparencyActive = 0,
+			TabIcon = Color3.fromHex("#B5B5B5"),
+			TabIconTransparency = 0.18,
+			TabIconTransparencyActive = 0,
+			-- Navigation selection + avatar ring follow the neutral badge outline;
+			-- interactive controls keep their magenta accent independently.
+			TabIndicator = Color3.fromHex("#5A5A5A"),
+
+			-- dropdown
+			DropdownBackground = Color3.fromHex("#141414"),
+			DropdownTabBackground = Color3.fromHex("#1E1E1E"),
+			DropdownTabBorder = Color3.fromHex("#2A2A2A"),
+
+			-- label / code blocks
+			LabelBackground = Color3.fromHex("#1C1C1C"),
+			LabelBackgroundTransparency = 0,
+
+			-- slider / progress
+			SliderIcon = Color3.fromHex("#8C8C8C"),
+			SliderThumb = Color3.fromHex("#FFFFFF"),
+			ProgressBar = Color3.fromHex("#FF00E0"),
+			ProgressBarTrack = Color3.fromHex("#3A3A3A"),
+			ProgressBarTrackTransparency = 0,
+
+			-- toggle: track DOES tint magenta when on (fixes the reference's weak on/off read)
+			ToggleBar = Color3.fromHex("#F2F2F2"),
+
+			-- checkbox
+			CheckboxBorder = Color3.fromHex("#3A3A3A"),
+			CheckboxBorderTransparency = 0,
+
+			-- sections
+			SectionBox = Color3.fromHex("#141414"),
+			SectionBoxTransparency = 0,
+			SectionBoxBorder = Color3.fromHex("#2A2A2A"),
+			SectionBoxBorderTransparency = 0,
+			SectionBoxBackground = Color3.fromHex("#141414"),
+			SectionBoxBackgroundTransparency = 0,
+
+			-- search bar
+			WindowSearchBarBackground = Color3.fromHex("#1C1C1C"),
+			SearchBarBorder = Color3.fromHex("#2A2A2A"),
+			SearchBarBorderTransparency = 0,
+
+			-- notifications: near-black card, magenta outline, white text.
+			Notification = Color3.fromHex("#141414"),
+			Notification2 = Color3.fromHex("#141414"),
+			Notification2Transparency = 0,
+			NotificationTitle = Color3.fromHex("#FFFFFF"),
+			NotificationTitleTransparency = 0,
+			NotificationContent = Color3.fromHex("#FFFFFF"),
+			NotificationContentTransparency = 0.25,
+			NotificationBorder = Color3.fromHex("#FF00E0"),
+			NotificationBorderTransparency = 0,
+			NotificationDuration = Color3.fromHex("#FF00E0"),
+			NotificationDurationTransparency = 1,
+
+			-- tooltip
+			Tooltip = Color3.fromHex("#1C1C1C"),
+			TooltipSecondary = Color3.fromHex("#FF00E0"),
+
+			-- window chrome
+			WindowShadow = Color3.fromHex("#000000"),
+			WindowTopbarTitle = Color3.fromHex("#FFFFFF"),
+			WindowTopbarAuthor = Color3.fromHex("#FF00E0"),
+			WindowTopbarIcon = Color3.fromHex("#FFFFFF"),
+			WindowTopbarButtonIcon = Color3.fromHex("#B5B5B5"),
+			HeaderSeparator = Color3.fromHex("#FF00E0"),
+			PaneSeparator = Color3.fromHex("#242424"),
+		},
+
 		Dark = {
 			Name = "Dark",
 

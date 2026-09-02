@@ -30,13 +30,15 @@ function Button.New(Title, Icon, Callback, Variant, Parent, Dialog, FullRounded,
 		BackgroundTransparency = 1,
 	}, {
 		Creator.NewRoundFrame(Radius, "Squircle", {
-			ThemeTag = {
-				ImageColor3 = Variant ~= "White" and "Button" or nil,
-			},
-			ImageColor3 = Variant == "White" and Color3.new(1, 1, 1) or nil,
+			ThemeTag = Variant ~= "White" and Variant ~= "Neutral" and {
+				ImageColor3 = "Button",
+			} or nil,
+			ImageColor3 = Variant == "White" and Color3.new(1, 1, 1)
+				or Variant == "Neutral" and Color3.fromHex("#2A2A2A")
+				or nil,
 			Size = UDim2.new(1, 0, 1, 0),
 			Name = "Squircle",
-			ImageTransparency = Variant == "Primary" and 0 or Variant == "White" and 0 or 0.9,
+			ImageTransparency = (Variant == "Primary" or Variant == "White" or Variant == "Neutral") and 0 or 0.9,
 		}),
 
 		Creator.NewRoundFrame(Radius, "Squircle", {

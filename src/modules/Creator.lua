@@ -22,7 +22,10 @@ local WindUI
 
 local Creator
 Creator = {
-	Font = "rbxassetid://12187365364",
+	-- Limbo Hub: GothamSSm — the "Small" variant is drawn for UI sizes, with
+	-- flat terminals and a firm, squared skeleton that reads more assertive
+	-- than Inter at 11-15px.
+	Font = "rbxasset://fonts/families/GothamSSm.json",
 	Localization = nil,
 	CanDraggable = true,
 	Theme = nil,
@@ -143,9 +146,14 @@ function Creator.AddSignal(Signal, Function)
 end
 
 function Creator.DisconnectAll()
-	for idx, signal in next, Creator.Signals do
+	-- Never remove from an array while iterating it forward with next(): indices
+	-- shift and every second RBXScriptConnection survives. Drain backwards so a
+	-- window destroy deterministically disconnects every tracked signal.
+	for idx = #Creator.Signals, 1, -1 do
 		local Connection = table.remove(Creator.Signals, idx)
-		Connection:Disconnect()
+		if Connection and Connection.Connected then
+			Connection:Disconnect()
+		end
 	end
 end
 
@@ -650,7 +658,7 @@ function Creator.Drag(mainFrame, dragFrames, ondrag)
 	end
 
 	for _, dragFrame in pairs(dragFrames) do
-		dragFrame.InputBegan:Connect(function(input)
+		Creator.AddSignal(dragFrame.InputBegan, function(input)
 			if not DragModule.CanDraggable or dragging then
 				return
 			end
@@ -678,7 +686,7 @@ function Creator.Drag(mainFrame, dragFrames, ondrag)
 		end)
 	end
 
-	UserInputService.InputChanged:Connect(function(input)
+	Creator.AddSignal(UserInputService.InputChanged, function(input)
 		if not dragging then
 			return
 		end
@@ -697,7 +705,7 @@ function Creator.Drag(mainFrame, dragFrames, ondrag)
 		end
 	end)
 
-	UserInputService.InputEnded:Connect(function(input)
+	Creator.AddSignal(UserInputService.InputEnded, function(input)
 		if not dragging or WindUI.CurrentInput ~= CurInput then
 			return
 		end
@@ -728,6 +736,49 @@ function Creator.Drag(mainFrame, dragFrames, ondrag)
 end
 
 Icons.Init(New, "Icon")
+
+-- Limbo Hub: best-effort executor detection. Executors expose different
+-- entrypoints, so try the standard ones in order and fall back to a generic
+-- label rather than erroring or showing an empty badge.
+function Creator.GetExecutorName()
+	local name
+
+	local ok, a, b = pcall(function()
+		if identifyexecutor then
+			return identifyexecutor()
+		end
+	end)
+	if ok and typeof(a) == "string" and a ~= "" then
+		name = a
+		-- Some executors return (name, version); keep just the name for the pill.
+		if typeof(b) == "string" and b ~= "" then
+			name = a
+		end
+	end
+
+	if not name then
+		local ok2, res = pcall(function()
+			if getexecutorname then
+				return getexecutorname()
+			end
+		end)
+		if ok2 and typeof(res) == "string" and res ~= "" then
+			name = res
+		end
+	end
+
+	if not name or name == "" then
+		return "Unknown"
+	end
+
+	-- Strip anything exotic and cap the length so the pill stays compact.
+	name = name:gsub("[^%w%-_%. ]", ""):gsub("^%s+", ""):gsub("%s+$", "")
+	if name == "" then
+		return "Unknown"
+	end
+
+	return string.sub(name, 1, 18)
+end
 
 function Creator.SanitizeFilename(url)
 	local filename = url:match("([^/]+)$") or url
@@ -777,7 +828,7 @@ function Creator.Image(Img, Name, Corner, Folder, Type, IsThemeTag, Themed, Them
 		}).IconFrame
 		IconLabel.Parent = ImageFrame
 	elseif string.find(Img, "http") and not string.find(Img, "roblox.com") then
-		local FileName = "WindUI/" .. Folder .. "/assets/." .. Type .. "-" .. Name .. ".png"
+		local FileName = "LimboHUB/" .. Folder .. "/assets/." .. Type .. "-" .. Name .. ".png"
 		local success, response = pcall(function()
 			task.spawn(function()
 				local response = Creator.Request

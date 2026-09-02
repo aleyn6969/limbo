@@ -9,22 +9,27 @@ function Element:New(Config)
 		__type = "Section",
 		Title = Config.Title or "Section",
 		Desc = Config.Desc,
-		Icon = Config.Icon,
+		-- Limbo Hub: sections are text-only. Icons are intentionally ignored so
+		-- headers stay a clean "[Section] Title" row with just the chevron.
+		Icon = nil,
 		IconThemed = Config.IconThemed,
 		TextXAlignment = Config.TextXAlignment or "Left",
-		TextSize = Config.TextSize or 19,
-		DescTextSize = Config.DescTextSize or 16,
-		Box = Config.Box or false,
-		BoxBorder = Config.BoxBorder or false,
-		FontWeight = Config.FontWeight or Enum.FontWeight.SemiBold,
+		-- Limbo Hub: compact section header typography.
+		TextSize = Config.TextSize or 13,
+		DescTextSize = Config.DescTextSize or 11,
+		-- Limbo Hub: sections read as grouped cards by default.
+		Box = Config.Box ~= false,
+		BoxBorder = Config.BoxBorder ~= false,
+		FontWeight = Config.FontWeight or Enum.FontWeight.Bold,
 		DescFontWeight = Config.DescFontWeight or Enum.FontWeight.Medium,
 		TextTransparency = Config.TextTransparency or 0.05,
 		DescTextTransparency = Config.DescTextTransparency or 0.4,
-		Opened = Config.Opened or false,
+		Opened = Config.Opened == true,
 		UIElements = {},
 
-		HeaderSize = 48,
-		IconSize = 20,
+		-- Limbo Hub: compact collapsible header.
+		HeaderSize = 34,
+		IconSize = 16,
 		Padding = 10,
 
 		Elements = {},
@@ -35,25 +40,16 @@ function Element:New(Config)
 	local Icon
 
 	function Section:SetIcon(i)
-		Section.Icon = i or nil
+		-- No-op: Limbo Hub sections never render an icon.
+		Section.Icon = nil
 		if Icon then
 			Icon:Destroy()
-		end
-		if i then
-			Icon = Creator.Image(
-				i,
-				i .. ":" .. Section.Title,
-				0,
-				Config.Window.Folder,
-				Section.__type,
-				true,
-				Section.IconThemed,
-				"SectionIcon"
-			)
-			Icon.Size = UDim2.new(0, Section.IconSize, 0, Section.IconSize)
+			Icon = nil
 		end
 	end
 
+	-- Limbo Hub: closed = chevron-right, open = the same glyph rotated to
+	-- chevron-down. One asset, so the rotation tween stays continuous.
 	local ChevronIconFrame = New("Frame", {
 		Size = UDim2.new(0, Section.IconSize, 0, Section.IconSize),
 		BackgroundTransparency = 1,
@@ -62,9 +58,9 @@ function Element:New(Config)
 		New("ImageLabel", {
 			Size = UDim2.new(1, 0, 1, 0),
 			BackgroundTransparency = 1,
-			Image = Creator.Icon("chevron-down")[1],
-			ImageRectSize = Creator.Icon("chevron-down")[2].ImageRectSize,
-			ImageRectOffset = Creator.Icon("chevron-down")[2].ImageRectPosition,
+			Image = Creator.Icon("chevron-right")[1],
+			ImageRectSize = Creator.Icon("chevron-right")[2].ImageRectSize,
+			ImageRectOffset = Creator.Icon("chevron-right")[2].ImageRectPosition,
 			ThemeTag = {
 				ImageTransparency = "SectionExpandIconTransparency",
 				ImageColor3 = "SectionExpandIcon",
@@ -96,6 +92,7 @@ function Element:New(Config)
 			TextXAlignment = Section.TextXAlignment,
 			AutomaticSize = "Y",
 			TextSize = Type == "Title" and Section.TextSize or Section.DescTextSize,
+			LineHeight = 1.25,
 			TextTransparency = Type == "Title" and Section.TextTransparency or Section.DescTextTransparency,
 			ThemeTag = {
 				TextColor3 = "Text",
@@ -214,13 +211,15 @@ function Element:New(Config)
 
 	Section.ElementFrame = Main
 
-	Main.Outline.Top:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+	Creator.AddSignal(Main.Outline.Top:GetPropertyChangedSignal("AbsoluteSize"), function()
 		Main.Outline.Content.Position = UDim2.new(0, 0, 0, (Main.Outline.Top.AbsoluteSize.Y / Config.UIScale) + 10)
 
 		if Section.Opened then
 			Section:Open(true)
 		else
-			Section.Close(true)
+			-- Was `Section.Close(true)`: a dot call, so `self` became `true` and
+			-- IsNotAnim was lost, making the initial collapse animate.
+			Section:Close(true)
 		end
 	end)
 
@@ -276,7 +275,8 @@ function Element:New(Config)
 						+ (Main.Outline.Content.AbsoluteSize.Y / Config.UIScale)
 						+ 10
 				)
-				ChevronIconFrame.ImageLabel.Rotation = 180
+				-- chevron-right rotated +90° reads as chevron-down.
+				ChevronIconFrame.ImageLabel.Rotation = 90
 			else
 				Tween(Main, 0.33, {
 					Size = UDim2.new(
@@ -292,7 +292,7 @@ function Element:New(Config)
 				Tween(
 					ChevronIconFrame.ImageLabel,
 					0.2,
-					{ Rotation = 180 },
+					{ Rotation = 90 },
 					Enum.EasingStyle.Quint,
 					Enum.EasingDirection.Out
 				):Play()

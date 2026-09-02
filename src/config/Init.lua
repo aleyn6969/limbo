@@ -3,13 +3,52 @@ local cloneref = (cloneref or clonereference or function(instance) return instan
 
 local RunService = cloneref(game:GetService("RunService"))
 local HttpService = cloneref(game:GetService("HttpService"))
+local MarketplaceService = cloneref(game:GetService("MarketplaceService"))
 
-local Window 
+local Window
+
+-- Limbo Hub: configs live under LimboHUB/<Game Name>/Config/ so each
+-- experience keeps its own profiles. Falls back to the PlaceId when the
+-- marketplace lookup is unavailable (offline/rate limited/Studio).
+local function GetGameFolderName()
+    local name
+
+    local ok, info = pcall(function()
+        return MarketplaceService:GetProductInfo(game.PlaceId)
+    end)
+    if ok and typeof(info) == "table" and typeof(info.Name) == "string" then
+        name = info.Name
+    end
+
+    if not name or name == "" then
+        local okName, placeName = pcall(function()
+            return game:GetService("Players") and game.Name
+        end)
+        if okName and typeof(placeName) == "string" and placeName ~= "" then
+            name = placeName
+        end
+    end
+
+    if not name or name == "" then
+        return "Place-" .. tostring(game.PlaceId)
+    end
+
+    -- File-system safe: strip separators and anything exotic.
+    name = name:gsub("[^%w%-_ ]", ""):gsub("%s+", " ")
+    name = name:gsub("^%s+", ""):gsub("%s+$", "")
+
+    if name == "" then
+        return "Place-" .. tostring(game.PlaceId)
+    end
+
+    return string.sub(name, 1, 48)
+end
 
 local ConfigManager
 ConfigManager = {
     Folder = nil,
     Path = nil,
+    GameFolder = nil,
     Configs = {},
     Parser = {
         Colorpicker = {
@@ -106,8 +145,19 @@ function ConfigManager:Init(WindowTable)
     
     Window = WindowTable
     ConfigManager.Folder = Window.Folder
-    ConfigManager.Path = "WindUI/" .. tostring(ConfigManager.Folder) .. "/config/"
-    
+    ConfigManager.GameFolder = GetGameFolderName()
+
+    -- LimboHUB/<Game Name>/Config/
+    local root = "LimboHUB"
+    local gameDir = root .. "/" .. ConfigManager.GameFolder
+    ConfigManager.Path = gameDir .. "/Config/"
+
+    if not isfolder(root) then
+        makefolder(root)
+    end
+    if not isfolder(gameDir) then
+        makefolder(gameDir)
+    end
     if not isfolder(ConfigManager.Path) then
         makefolder(ConfigManager.Path)
     end
@@ -142,6 +192,12 @@ function ConfigManager:SetPath(customPath)
 end
 
 function ConfigManager:CreateConfig(configFilename, autoload)
+    -- Validate before constructing the path; concatenating nil would raise before
+    -- the advertised controlled error can be returned.
+    if typeof(configFilename) ~= "string" or configFilename == "" then
+        return false, "No config file is selected"
+    end
+
     local ConfigModule = {
         Path = ConfigManager.Path .. configFilename .. ".json",
         Elements = {},
@@ -149,10 +205,6 @@ function ConfigManager:CreateConfig(configFilename, autoload)
         AutoLoad = autoload or false,
         Version = 1.2,
     }
-    
-    if not configFilename then
-        return false, "No config file is selected"
-    end
     
     function ConfigModule:SetAsCurrent()
         Window:SetCurrentConfig(ConfigModule)
@@ -175,6 +227,13 @@ function ConfigManager:CreateConfig(configFilename, autoload)
     end
     
     function ConfigModule:Save()
+        -- Limbo Hub: adopt every flagged element on the window, so a freshly
+        -- created profile still captures the full UI state.
+        if Window.Flags then
+            for flag, element in next, Window.Flags do
+                ConfigModule:Register(flag, element)
+            end
+        end
         if Window.PendingFlags then
             for flag, element in next, Window.PendingFlags do
                 ConfigModule:Register(flag, element)
@@ -228,6 +287,11 @@ function ConfigManager:CreateConfig(configFilename, autoload)
             loadData = migratedData
         end
         
+        if Window.Flags then
+            for flag, element in next, Window.Flags do
+                ConfigModule:Register(flag, element)
+            end
+        end
         if Window.PendingFlags then
             for flag, element in next, Window.PendingFlags do
                 ConfigModule:Register(flag, element)

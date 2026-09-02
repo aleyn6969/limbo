@@ -12,7 +12,7 @@ function Label.New(Text, Icon, Parent, IsPlaceholder, Radius, RemoveGlass)
 			Image = Creator.Icon(Icon)[1],
 			ImageRectSize = Creator.Icon(Icon)[2].ImageRectSize,
 			ImageRectOffset = Creator.Icon(Icon)[2].ImageRectPosition,
-			Size = UDim2.new(0, 24 - 3, 0, 24 - 3),
+			Size = UDim2.new(0, 16, 0, 16),
 			BackgroundTransparency = 1,
 			ThemeTag = {
 				ImageColor3 = "Icon",
@@ -22,9 +22,9 @@ function Label.New(Text, Icon, Parent, IsPlaceholder, Radius, RemoveGlass)
 
 	local TextLabel = New("TextLabel", {
 		BackgroundTransparency = 1,
-		TextSize = 17,
-		FontFace = Font.new(Creator.Font, Enum.FontWeight.Regular),
-		Size = UDim2.new(1, IconLabelFrame and -29 or 0, 1, 0),
+		TextSize = 13,
+		FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
+		Size = UDim2.new(1, IconLabelFrame and -26 or 0, 1, 0),
 		TextXAlignment = "Left",
 		ThemeTag = {
 			TextColor3 = IsPlaceholder and "Placeholder" or "Text",

@@ -44,7 +44,7 @@ end
 
 local CurInput = WindUI.GenerateGUID()
 
-UserInputService.InputBegan:Connect(function(Input, GameProcessed)
+WindUI.Creator.AddSignal(UserInputService.InputBegan, function(Input, GameProcessed)
 	--[[if GameProcessed then
 		return
 	end]]
@@ -64,7 +64,7 @@ UserInputService.InputBegan:Connect(function(Input, GameProcessed)
 		end
 	end)
 end)
-UserInputService.InputEnded:Connect(function(Input, GameProcessed)
+WindUI.Creator.AddSignal(UserInputService.InputEnded, function(Input, GameProcessed)
 	if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 		if WindUI.CurrentInput and WindUI.CurrentInput ~= CurInput then
 			return
@@ -299,7 +299,7 @@ WindUI.Themes = require("./themes/Init")(WindUI, Creator)
 
 Creator.Themes = WindUI.Themes
 
-WindUI:SetTheme("Dark")
+WindUI:SetTheme("Limbo")
 WindUI:SetLanguage(Creator.Language)
 
 function WindUI:CreateWindow(Config)
@@ -327,7 +327,7 @@ function WindUI:CreateWindow(Config)
 
 	local CanLoadWindow = true
 
-	local Theme = WindUI.Themes[Config.Theme or "Dark"]
+	local Theme = WindUI.Themes[Config.Theme or "Limbo"]
 
 	--WindUI.Theme = Theme
 	Creator.SetTheme(Theme)

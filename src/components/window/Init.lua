@@ -30,6 +30,15 @@ return function(Config)
 	local Window = {
 		Title = Config.Title or "UI Library",
 		Author = Config.Author,
+		-- Limbo Hub header extras: "Limbo Hub | <Subtitle> | [Version]".
+		Subtitle = Config.Subtitle,
+		Version = Config.Version,
+		-- Show a pill with the detected executor name in the header.
+		ShowExecutor = Config.ShowExecutor,
+		-- Optional faint artwork centered behind the main content pane.
+		Watermark = Config.Watermark,
+		WatermarkTransparency = Config.WatermarkTransparency or 0.94,
+		WatermarkSize = Config.WatermarkSize or 285,
 		Icon = Config.Icon,
 		IconSize = Config.IconSize or 22,
 		IconThemed = Config.IconThemed,
@@ -41,7 +50,7 @@ return function(Config)
 		ShadowTransparency = Config.ShadowTransparency or 0.6,
 		User = Config.User or {},
 		Footer = Config.Footer or {},
-		Topbar = Config.Topbar or { Height = 52, ButtonsType = "Default" }, -- Default or Mac
+		Topbar = Config.Topbar or { Height = 40, ButtonsType = "Default" }, -- Default or Mac
 
 		Size = Config.Size,
 
@@ -52,11 +61,15 @@ return function(Config)
 
 		ToggleKey = Config.ToggleKey,
 		ElementsRadius = Config.ElementsRadius,
-		Radius = Config.Radius or 16,
+		Radius = Config.Radius or 8,
 		Transparent = Config.Transparent or false,
 		HideSearchBar = Config.HideSearchBar ~= false,
+		-- Limbo Hub: compact sidebar search row height (reference ~36px).
+		SearchBarHeight = 36,
+		-- Limbo Hub: sidebar footer account row (44px tall + 8px bottom margin + 8px gap).
+		UserRowReserve = 60,
 		ScrollBarEnabled = Config.ScrollBarEnabled or false,
-		SideBarWidth = Config.SideBarWidth or 200,
+		SideBarWidth = Config.SideBarWidth or 152,
 		Acrylic = Config.Acrylic or false,
 		NewElements = Config.NewElements or false,
 		IgnoreAlerts = Config.IgnoreAlerts or false,
@@ -66,8 +79,8 @@ return function(Config)
 		DragFrameSize = 160,
 
 		Position = UDim2.new(0.5, 0, 0.5, 0),
-		UICorner = 16, -- Window.Radius (16)
-		UIPadding = 14,
+		UICorner = 8, -- Window.Radius (8)
+		UIPadding = 10,
 		UIElements = {},
 		CanDropdown = true,
 		Closed = false,
@@ -96,6 +109,8 @@ return function(Config)
 
 		ElementConfig = {},
 
+		CurrentConfig = nil,
+		Flags = {},
 		PendingFlags = {},
 
 		IsToggleDragging = false,
@@ -106,8 +121,8 @@ return function(Config)
 	Window.TopBarButtonIconSize = Window.TopBarButtonIconSize or (Window.Topbar.ButtonsType == "Mac" and 11 or 16)
 
 	Window.ElementConfig = {
-		UIPadding = (Window.NewElements and 10 or 13),
-		UICorner = Window.ElementsRadius or (Window.NewElements and 23 or 16),
+		UIPadding = (Window.NewElements and 7 or 8),
+		UICorner = Window.ElementsRadius or 6,
 	}
 
 	local WindowSize = Window.Size or UDim2.new(0, 580, 0, 460)
@@ -123,11 +138,14 @@ return function(Config)
 	end
 
 	if not RunService:IsStudio() and Window.Folder and writefile then
-		if not isfolder("WindUI/" .. Window.Folder) then
-			makefolder("WindUI/" .. Window.Folder)
+		if not isfolder("LimboHUB") then
+			makefolder("LimboHUB")
 		end
-		if not isfolder("WindUI/" .. Window.Folder .. "/assets") then
-			makefolder("WindUI/" .. Window.Folder .. "/assets")
+		if not isfolder("LimboHUB/" .. Window.Folder) then
+			makefolder("LimboHUB/" .. Window.Folder)
+		end
+		if not isfolder("LimboHUB/" .. Window.Folder .. "/assets") then
+			makefolder("LimboHUB/" .. Window.Folder .. "/assets")
 		end
 		if not isfolder(Window.Folder) then
 			makefolder(Window.Folder)
@@ -151,21 +169,36 @@ return function(Config)
 		Window.AcrylicPaint = AcrylicPaint
 	end
 
+	-- Limbo Hub: bottom-right resize grip using lucide minimize-2, drawn in
+	-- solid white so users can see the window is draggable to resize.
+	-- Tucked hard into the corner: the hit area is deliberately small (20px)
+	-- and the glyph is anchored bottom-right so it never floats over the last
+	-- row of the content list, which would make that row hard to click.
+	local ResizeGripIcon = Creator.Icon("minimize-2")
 	local ResizeHandle = New("Frame", {
-		Size = UDim2.new(0, 32, 0, 32),
-		Position = UDim2.new(1, 0, 1, 0),
-		AnchorPoint = Vector2.new(0.5, 0.5),
+		Name = "ResizeGrip",
+		Size = UDim2.new(0, 20, 0, 20),
+		Position = UDim2.new(1, -2, 1, -2),
+		AnchorPoint = Vector2.new(1, 1),
 		BackgroundTransparency = 1,
-		ZIndex = 99,
+		-- Above the fullscreen overlays (ZIndex 98 / 999) which are siblings of
+		-- Main; anything lower gets its input swallowed by them.
+		ZIndex = 1000,
 		Active = true,
+		Visible = true,
 	}, {
 		New("ImageLabel", {
-			Size = UDim2.new(0, 48 * 2, 0, 48 * 2),
+			Size = UDim2.new(0, 12, 0, 12),
 			BackgroundTransparency = 1,
-			Image = "rbxassetid://120997033468887",
-			Position = UDim2.new(0.5, -16, 0.5, -16),
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			ImageTransparency = 1, -- .8; .35
+			Image = ResizeGripIcon[1],
+			ImageRectSize = ResizeGripIcon[2].ImageRectSize,
+			ImageRectOffset = ResizeGripIcon[2].ImageRectPosition,
+			Position = UDim2.new(1, 0, 1, 0),
+			AnchorPoint = Vector2.new(1, 1),
+			-- Explicit white, no theme tag: the grip must stay legible on every
+			-- theme, and "Icon" resolved to a dim grey that vanished.
+			ImageColor3 = Color3.fromHex("#FFFFFF"),
+			ImageTransparency = 0.35,
 		}),
 	})
 	local FullScreenIcon = Creator.NewRoundFrame(Window.UICorner, "Squircle", {
@@ -208,7 +241,7 @@ return function(Config)
 			1,
 			Window.ScrollBarEnabled and -3 - (Window.UIPadding / 2) or 0,
 			1,
-			not Window.HideSearchBar and -39 - 6 or 0
+			not Window.HideSearchBar and -(Window.SearchBarHeight + 8) or 0
 		),
 		Position = UDim2.new(0, 0, 1, 0),
 		AnchorPoint = Vector2.new(0, 1),
@@ -235,13 +268,18 @@ return function(Config)
 			}),
 			New("UIListLayout", {
 				SortOrder = "LayoutOrder",
-				Padding = UDim.new(0, Window.Gap),
+				-- Sidebar tabs are a compact navigation list, not content cards.
+				-- Keep their pitch tight without changing spacing elsewhere.
+				Padding = UDim.new(0, 2),
 			}),
 		}),
 		New("UIPadding", {
-			--PaddingTop = UDim.new(0,4),
-			PaddingLeft = UDim.new(0, Window.UIPadding / 2),
-			PaddingRight = UDim.new(0, Window.UIPadding / 2),
+			-- Limbo: breathing room between the titlebar rule and navigation.
+			-- Balanced offset below the header rule for Limbo navigation.
+			PaddingTop = UDim.new(0, 13),
+			-- Symmetric 8px nav inset: the active row should float inside the rail.
+			PaddingLeft = UDim.new(0, 8),
+			PaddingRight = UDim.new(0, 8),
 			PaddingBottom = UDim.new(0, Window.UIPadding / 2),
 		}),
 		--TabHighlight
@@ -252,7 +290,7 @@ return function(Config)
 			0,
 			Window.SideBarWidth,
 			1,
-			Window.User.Enabled and -Window.Topbar.Height - 42 - (Window.UIPadding * 2) or -Window.Topbar.Height
+			Window.User.Enabled and -Window.Topbar.Height - Window.UserRowReserve or -Window.Topbar.Height
 		),
 		Position = UDim2.new(0, 0, 0, Window.Topbar.Height),
 		BackgroundTransparency = 1,
@@ -261,7 +299,13 @@ return function(Config)
 		New("Frame", {
 			Name = "Content",
 			BackgroundTransparency = 1,
-			Size = UDim2.new(1, 0, 1, not Window.HideSearchBar and -39 - 6 - Window.UIPadding or -Window.UIPadding / 2),
+			Size = UDim2.new(
+				1,
+				0,
+				1,
+				not Window.HideSearchBar and -(Window.SearchBarHeight + 8) - Window.UIPadding
+					or -Window.UIPadding / 2
+			),
 			Position = UDim2.new(0, 0, 1, -Window.UIPadding / 2),
 			AnchorPoint = Vector2.new(0, 1),
 		}),
@@ -277,6 +321,60 @@ return function(Config)
 			Config.WindUI
 		)
 	end
+
+	-- Resolve an optional watermark URL into an executor custom asset. Failure is
+	-- non-fatal: the window still loads, simply without the artwork.
+	local WatermarkAsset
+	if typeof(Window.Watermark) == "string" and Window.Watermark ~= "" then
+		if Window.Watermark:match("^rbxasset") then
+			WatermarkAsset = Window.Watermark
+		elseif Window.Watermark:match("^https?://") then
+			-- Include the URL's filename in the cache path so changing artwork does
+			-- not silently reuse an older executor-cached file.
+			local watermarkName = Creator.SanitizeFilename(Window.Watermark:match("^([^?]+)") or Window.Watermark)
+			local assetRoot = "LimboHUB/" .. (Window.Folder or "Temp") .. "/assets"
+			if makefolder and isfolder and not isfolder(assetRoot) then
+				makefolder(assetRoot)
+			end
+			local path = assetRoot .. "/." .. watermarkName
+			local ok, result = pcall(function()
+				if not isfile(path) then
+					local body = game.HttpGet and game:HttpGet(Window.Watermark)
+						or Creator.Request({ Url = Window.Watermark, Method = "GET" }).Body
+					writefile(path, body)
+				end
+				return getcustomasset(path)
+			end)
+			if ok then
+				WatermarkAsset = result
+			else
+				warn("[LimboHub.Watermark] Failed to load artwork: " .. tostring(result))
+			end
+		end
+	end
+
+	local Watermark = WatermarkAsset and New("ImageLabel", {
+		Name = "Watermark",
+		-- Source artwork is cropped to 512×496; preserve that ratio so Fit does
+		-- not introduce fresh letterboxing at the bottom.
+		Size = UDim2.fromOffset(Window.WatermarkSize, math.floor(Window.WatermarkSize * 496 / 512 + 0.5)),
+		-- Ground the artwork at the panel floor instead of floating it around
+		-- center. The 0px bottom offset deliberately lets the source's pedestal
+		-- meet the lower edge cleanly while ScaleType.Fit preserves all pixels.
+		-- MainBar carries 5px bottom padding, so +5 compensates it and aligns the
+		-- image box with the panel's actual visual bottom edge.
+		-- Extend 2px beyond the visual edge to absorb source anti-aliasing; the
+		-- rounded panel clips the overhang, leaving no dark hairline underneath.
+		Position = UDim2.new(0.5, 0, 1, 7),
+		AnchorPoint = Vector2.new(0.5, 1),
+		BackgroundTransparency = 1,
+		Image = WatermarkAsset,
+		ImageTransparency = Window.WatermarkTransparency,
+		ScaleType = "Fit",
+		ZIndex = 4,
+		Active = false,
+	}) or nil
+	Window.UIElements.Watermark = Watermark
 
 	Window.UIElements.MainBar = New("Frame", {
 		Size = UDim2.new(1, -Window.UIElements.SideBarContainer.AbsoluteSize.X, 1, -Window.Topbar.Height),
@@ -296,6 +394,7 @@ return function(Config)
 			Name = "Background",
 			Visible = not Window.HidePanelBackground,
 		}),
+		Watermark,
 		New("UIPadding", {
 			--PaddingTop = UDim.new(0,Window.UIPadding/2),
 			PaddingLeft = UDim.new(0, Window.UIPadding / 2),
@@ -336,6 +435,21 @@ return function(Config)
 
 	local UserIcon
 	if Window.User then
+		-- Limbo Hub: mask the tail of the name so screenshots/streams don't leak
+		-- the full account handle. "berantasa" -> "Bera*****".
+		local function MaskName(name)
+			if not name or name == "" then
+				return "Unknown"
+			end
+
+			local keep = Window.User.MaskVisible or 4
+			if #name <= keep then
+				return name
+			end
+
+			return string.sub(name, 1, keep) .. string.rep("*", #name - keep)
+		end
+
 		local function GetUserThumb()
 			local ImageId, _ = Players:GetUserThumbnailAsync(
 				Window.User.Anonymous and 1 or Players.LocalPlayer.UserId,
@@ -345,107 +459,96 @@ return function(Config)
 			return ImageId
 		end
 
+		-- Limbo Hub: compact account row pinned to the sidebar footer.
+		-- Circular headshot + single greeting line, aligned to the 8px nav gutter.
 		UserIcon = New("TextButton", {
-			Size = UDim2.new(
-				0,
-				Window.UIElements.SideBarContainer.AbsoluteSize.X - (Window.UIPadding / 2),
-				0,
-				42 + Window.UIPadding
-			),
-			Position = UDim2.new(0, Window.UIPadding / 2, 1, -(Window.UIPadding / 2)),
+			-- Parented to the window root, so width must be derived from the rail.
+			Size = UDim2.new(0, Window.SideBarWidth - 16, 0, 44),
+			Position = UDim2.new(0, 8, 1, -8),
 			AnchorPoint = Vector2.new(0, 1),
 			BackgroundTransparency = 1,
+			Text = "",
 			Visible = Window.User.Enabled or false,
 		}, {
-			Creator.NewRoundFrame(Window.UICorner - (Window.UIPadding / 2), "SquircleOutline", {
+			Creator.NewRoundFrame(7, "Squircle", {
 				Size = UDim2.new(1, 0, 1, 0),
 				ThemeTag = {
-					ImageColor3 = "Text",
+					ImageColor3 = "ElementBackground",
+					ImageTransparency = "ElementBackgroundTransparency",
 				},
-				ImageTransparency = 1, -- .85
-				Name = "Outline",
-			}, {
-				New("UIGradient", {
-					Rotation = 78,
-					Color = ColorSequence.new({
-						ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
-						ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-						ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 255, 255)),
-					}),
-					Transparency = NumberSequence.new({
-						NumberSequenceKeypoint.new(0.0, 0.1),
-						NumberSequenceKeypoint.new(0.5, 1),
-						NumberSequenceKeypoint.new(1.0, 0.1),
-					}),
-				}),
-			}),
-			Creator.NewRoundFrame(Window.UICorner - (Window.UIPadding / 2), "Squircle", {
-				Size = UDim2.new(1, 0, 1, 0),
-				ThemeTag = {
-					ImageColor3 = "Text",
-				},
-				ImageTransparency = 1, -- .95
 				Name = "UserIcon",
 			}, {
 				New("ImageLabel", {
 					Image = GetUserThumb(),
-					BackgroundTransparency = 1,
-					Size = UDim2.new(0, 42, 0, 42),
+					BackgroundTransparency = 0.93,
+					Size = UDim2.fromOffset(32, 32),
 					ThemeTag = {
 						BackgroundColor3 = "Text",
 					},
-					BackgroundTransparency = 0.93,
 				}, {
 					New("UICorner", {
 						CornerRadius = UDim.new(1, 0),
 					}),
+					New("UIStroke", {
+						Thickness = 2,
+						-- Opaque so saturated avatar pixels cannot tint the neutral ring.
+						Transparency = 0,
+						ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+						ThemeTag = {
+							Color = "TabIndicator",
+						},
+					}),
 				}),
 				New("Frame", {
-					AutomaticSize = "XY",
+					Size = UDim2.new(1, -42, 1, 0),
 					BackgroundTransparency = 1,
 				}, {
 					New("TextLabel", {
-						Text = Window.User.Anonymous and "Anonymous" or Players.LocalPlayer.DisplayName,
-						TextSize = 17,
+						Text = "Welcome,",
+						TextSize = 11,
+						TextTransparency = 0.3,
 						ThemeTag = {
 							TextColor3 = "Text",
 						},
-						FontFace = Font.new(Creator.Font, Enum.FontWeight.SemiBold),
-						AutomaticSize = "Y",
+						FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
 						BackgroundTransparency = 1,
-						Size = UDim2.new(1, -(42 / 2) - 6, 0, 0),
+						Size = UDim2.new(1, 0, 0, 12),
+						TextXAlignment = "Left",
+						Name = "Greeting",
+					}),
+					New("TextLabel", {
+						Text = Window.User.Anonymous and "Anonymous" or MaskName(Players.LocalPlayer.DisplayName),
+						TextSize = 13,
+						ThemeTag = {
+							TextColor3 = "Text",
+						},
+						FontFace = Font.new(Creator.Font, Enum.FontWeight.Bold),
+						BackgroundTransparency = 1,
+						Size = UDim2.new(1, 0, 0, 15),
 						TextTruncate = "AtEnd",
 						TextXAlignment = "Left",
 						Name = "DisplayName",
 					}),
 					New("TextLabel", {
-						Text = Window.User.Anonymous and "anonymous" or Players.LocalPlayer.Name,
-						TextSize = 15,
-						TextTransparency = 0.6,
-						ThemeTag = {
-							TextColor3 = "Text",
-						},
-						FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
-						AutomaticSize = "Y",
+						Text = Window.User.Anonymous and "anonymous" or MaskName(Players.LocalPlayer.Name),
+						Visible = false,
 						BackgroundTransparency = 1,
-						Size = UDim2.new(1, -(42 / 2) - 6, 0, 0),
-						TextTruncate = "AtEnd",
-						TextXAlignment = "Left",
 						Name = "UserName",
 					}),
 					New("UIListLayout", {
-						Padding = UDim.new(0, 4),
+						Padding = UDim.new(0, 1),
 						HorizontalAlignment = "Left",
+						VerticalAlignment = "Center",
 					}),
 				}),
 				New("UIListLayout", {
-					Padding = UDim.new(0, Window.UIPadding),
+					Padding = UDim.new(0, 10),
 					FillDirection = "Horizontal",
 					VerticalAlignment = "Center",
 				}),
 				New("UIPadding", {
-					PaddingLeft = UDim.new(0, Window.UIPadding / 2),
-					PaddingRight = UDim.new(0, Window.UIPadding / 2),
+					PaddingLeft = UDim.new(0, 7),
+					PaddingRight = UDim.new(0, 7),
 				}),
 			}),
 		})
@@ -455,7 +558,7 @@ return function(Config)
 			Tween(
 				Window.UIElements.SideBarContainer,
 				0.25,
-				{ Size = UDim2.new(0, Window.SideBarWidth, 1, -Window.Topbar.Height - 42 - (Window.UIPadding * 2)) },
+				{ Size = UDim2.new(0, Window.SideBarWidth, 1, -Window.Topbar.Height - Window.UserRowReserve) },
 				Enum.EasingStyle.Quint,
 				Enum.EasingDirection.Out
 			):Play()
@@ -478,8 +581,8 @@ return function(Config)
 			end
 			Window.User.Anonymous = v
 			UserIcon.UserIcon.ImageLabel.Image = GetUserThumb()
-			UserIcon.UserIcon.Frame.DisplayName.Text = v and "Anonymous" or Players.LocalPlayer.DisplayName
-			UserIcon.UserIcon.Frame.UserName.Text = v and "anonymous" or Players.LocalPlayer.Name
+			UserIcon.UserIcon.Frame.DisplayName.Text = v and "Anonymous" or MaskName(Players.LocalPlayer.DisplayName)
+			UserIcon.UserIcon.Frame.UserName.Text = v and "anonymous" or MaskName(Players.LocalPlayer.Name)
 		end
 
 		if Window.User.Enabled then
@@ -655,7 +758,8 @@ return function(Config)
 	end
 
 	local BottomDragFrame = Creator.NewRoundFrame(99, "Squircle", {
-		ImageTransparency = 0.8,
+		ImageTransparency = 1,
+		Visible = false,
 		ImageColor3 = Color3.new(1, 1, 1),
 		Size = UDim2.new(0, 0, 0, 4), -- 200
 		Position = UDim2.new(0.5, 0, 1, 4),
@@ -666,7 +770,7 @@ return function(Config)
 			BackgroundTransparency = 1,
 			Position = UDim2.new(0.5, 0, 0.5, 0),
 			AnchorPoint = Vector2.new(0.5, 0.5),
-			Active = true,
+			Active = false,
 			ZIndex = 99,
 			Name = "Frame",
 		}),
@@ -682,7 +786,7 @@ return function(Config)
 			Parent = Window.UIElements.Main and Window.UIElements.Main.Main.Topbar.Left.Title,
 			TextXAlignment = "Left",
 			TextSize = 13,
-			LayoutOrder = 2,
+			LayoutOrder = 3,
 			ThemeTag = {
 				TextColor3 = "WindowTopbarAuthor",
 			},
@@ -699,16 +803,108 @@ return function(Config)
 
 	local WindowTitle = New("TextLabel", {
 		Text = Window.Title,
-		FontFace = Font.new(Creator.Font, Enum.FontWeight.SemiBold),
+		FontFace = Font.new(Creator.Font, Enum.FontWeight.Bold),
 		BackgroundTransparency = 1,
 		AutomaticSize = "XY",
 		Name = "Title",
 		TextXAlignment = "Left",
-		TextSize = 16,
+		-- Limbo Hub type ramp: 15 title / 13 body / 11 secondary.
+		TextSize = 15,
 		ThemeTag = {
 			TextColor3 = "WindowTopbarTitle",
 		},
 	})
+
+	-- Limbo Hub header: two stacked lines.
+	--   line 1: "Limbo Hub" + version pill + executor pill
+	--   line 2: <Game Name>
+	-- Stacking removes the need for a pipe separator entirely — the line break
+	-- does the separating, and the badges sit on the strong line.
+	-- Both pills share one neutral style (dark fill + hairline outline) so the
+	-- header stays calm; magenta is reserved for interactive state.
+	local function createBadge(text, name)
+		local Label = New("TextLabel", {
+			Text = text,
+			FontFace = Font.new(Creator.Font, Enum.FontWeight.Bold),
+			BackgroundTransparency = 1,
+			AutomaticSize = "XY",
+			Name = "BadgeLabel",
+			TextXAlignment = "Center",
+			TextSize = 11,
+			TextTransparency = 0.12,
+			ThemeTag = {
+				TextColor3 = "WindowTopbarTitle",
+			},
+		})
+
+		-- Pill sizes itself from the label plus symmetric padding.
+		local Badge = Creator.NewRoundFrame(999, "Squircle", {
+			AutomaticSize = "XY",
+			Size = UDim2.new(0, 0, 0, 0),
+			Name = name,
+			ImageTransparency = 0,
+			ImageColor3 = Color3.fromHex("#2A2A2A"),
+		}, {
+			New("UIPadding", {
+				PaddingTop = UDim.new(0, 3),
+				PaddingBottom = UDim.new(0, 3),
+				PaddingLeft = UDim.new(0, 7),
+				PaddingRight = UDim.new(0, 7),
+			}),
+			Creator.NewRoundFrame(999, "Squircle-Outline", {
+				Size = UDim2.new(1, 0, 1, 0),
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(0.5, 0, 0.5, 0),
+				Name = "BadgeOutline",
+				ImageTransparency = 0.45,
+				ImageColor3 = Color3.fromHex("#5A5A5A"),
+			}),
+			Label,
+		})
+
+		return Badge, Label
+	end
+
+	local HeaderRowChildren = {
+		New("UIListLayout", {
+			Padding = UDim.new(0, 6),
+			SortOrder = "LayoutOrder",
+			FillDirection = "Horizontal",
+			VerticalAlignment = "Center",
+		}),
+		WindowTitle,
+	}
+
+	local HeaderSubtitle
+	if Window.Subtitle and Window.Subtitle ~= "" then
+		HeaderSubtitle = New("TextLabel", {
+			Text = Window.Subtitle,
+			FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
+			BackgroundTransparency = 1,
+			AutomaticSize = "XY",
+			Name = "Subtitle",
+			TextXAlignment = "Left",
+			TextSize = 11,
+			TextTransparency = 0.4,
+			LayoutOrder = 2,
+			ThemeTag = {
+				TextColor3 = "WindowTopbarTitle",
+			},
+		})
+	end
+
+	if Window.Version and Window.Version ~= "" then
+		local VersionBadge = createBadge(Window.Version, "VersionBadge")
+		table.insert(HeaderRowChildren, VersionBadge)
+		Window.UIElements.VersionBadge = VersionBadge
+	end
+
+	-- Executor badge shares the version badge's neutral style.
+	if Window.ShowExecutor then
+		local ExecutorBadge = createBadge(Creator.GetExecutorName(), "ExecutorBadge")
+		table.insert(HeaderRowChildren, ExecutorBadge)
+		Window.UIElements.ExecutorBadge = ExecutorBadge
+	end
 
 	Window.UIElements.Main = New("Frame", {
 		Size = UDim2.new(Window.Size.X.Scale, Window.Size.X.Offset, 0, 0),
@@ -735,13 +931,15 @@ return function(Config)
 		}, {
 			BGImage,
 			BottomDragFrame,
-			ResizeHandle,
 		}),
 		--[[New("UIScale", {
 			Scale = 0.89,
 		}),]]
 		--UIStroke,
 		UICorner,
+		-- Mounted as a direct sibling of Main so its ZIndex 130 actually wins;
+		-- nested inside Background (ZIndex 1) it was painted under the content.
+		ResizeHandle,
 		FullScreenIcon,
 		FullScreenBlur,
 		New("Frame", {
@@ -757,6 +955,64 @@ return function(Config)
 			}),
 			Window.UIElements.SideBarContainer,
 			Window.UIElements.MainBar,
+
+			-- Limbo: inset accent rule separating the titlebar from the workspace.
+			New("Frame", {
+				Name = "HeaderSeparator",
+				Position = UDim2.new(0, 10, 0, Window.Topbar.Height - 1),
+				Size = UDim2.new(1, -20, 0, 1),
+				BorderSizePixel = 0,
+				BackgroundColor3 = Color3.new(1, 1, 1),
+				ZIndex = 110,
+			}, {
+				New("UICorner", {
+					CornerRadius = UDim.new(1, 0),
+				}),
+				New("UIGradient", {
+					Rotation = 0,
+					-- Neutral silver ramp, kept dim so it reads as a boundary hint
+					-- rather than a decorative highlight.
+					Color = ColorSequence.new({
+						ColorSequenceKeypoint.new(0, Color3.fromHex("#2E2E2E")),
+						ColorSequenceKeypoint.new(0.28, Color3.fromHex("#4A4A4A")),
+						ColorSequenceKeypoint.new(0.55, Color3.fromHex("#5E5E5E")),
+						ColorSequenceKeypoint.new(1, Color3.fromHex("#3A3A3A")),
+					}),
+					Transparency = NumberSequence.new({
+						NumberSequenceKeypoint.new(0, 1),
+						NumberSequenceKeypoint.new(0.12, 0.55),
+						NumberSequenceKeypoint.new(0.52, 0.38),
+						NumberSequenceKeypoint.new(0.88, 0.58),
+						NumberSequenceKeypoint.new(1, 1),
+					}),
+				}),
+			}),
+
+			-- Limbo Hub: recessed seam between navigation and content. A single
+			-- hairline that fades out at both ends — no gutter shadow, so it
+			-- never reads as a thick divider.
+			New("Frame", {
+				Name = "PaneSeparator",
+				Position = UDim2.new(0, Window.SideBarWidth, 0, Window.Topbar.Height + 12),
+				Size = UDim2.new(0, 1, 1, -Window.Topbar.Height - 20),
+				BorderSizePixel = 0,
+				BackgroundTransparency = 0.45,
+				ThemeTag = {
+					BackgroundColor3 = "PaneSeparator",
+				},
+				ZIndex = 105,
+			}, {
+				New("UIGradient", {
+					Rotation = 90,
+					Transparency = NumberSequence.new({
+						NumberSequenceKeypoint.new(0, 1),
+						NumberSequenceKeypoint.new(0.14, 0.25),
+						NumberSequenceKeypoint.new(0.5, 0),
+						NumberSequenceKeypoint.new(0.86, 0.25),
+						NumberSequenceKeypoint.new(1, 1),
+					}),
+				}),
+			}),
 
 			UserIcon,
 
@@ -794,12 +1050,22 @@ return function(Config)
 						LayoutOrder = 2,
 					}, {
 						New("UIListLayout", {
-							Padding = UDim.new(0, 0),
+							-- 1px leading between the title line and the game name.
+							Padding = UDim.new(0, 1),
 							SortOrder = "LayoutOrder",
 							FillDirection = "Vertical",
 							VerticalAlignment = "Center",
+							HorizontalAlignment = "Left",
 						}),
-						WindowTitle,
+						-- Limbo Hub: line 1 = title + version pill, line 2 = game name.
+						New("Frame", {
+							AutomaticSize = "XY",
+							BackgroundTransparency = 1,
+							Name = "HeaderRow",
+							Size = UDim2.new(0, 0, 0, 0),
+							LayoutOrder = 1,
+						}, HeaderRowChildren),
+						HeaderSubtitle,
 						WindowAuthor,
 					}),
 					New("UIPadding", {
@@ -1066,7 +1332,7 @@ return function(Config)
 
 	local WindowDragModule = Creator.Drag(
 		Window.UIElements.Main,
-		{ Window.UIElements.Main.Main.Topbar, BottomDragFrame.Frame },
+		{ Window.UIElements.Main.Main.Topbar },
 		function(dragging, frame) -- On drag
 			if not Window.Closed then
 				if dragging and frame == BottomDragFrame.Frame then
@@ -1113,7 +1379,7 @@ return function(Config)
 	task.spawn(function()
 		if Window.Icon then
 			local WindowIconContainer = New("Frame", {
-				Size = UDim2.new(0, 22, 0, 22),
+				Size = UDim2.fromOffset(22, 22),
 				BackgroundTransparency = 1,
 				Parent = Window.UIElements.Main.Main.Topbar.Left,
 			})
@@ -1129,7 +1395,7 @@ return function(Config)
 				"WindowTopbarIcon"
 			)
 			WindowIcon.Parent = WindowIconContainer
-			WindowIcon.Size = UDim2.new(0, Window.IconSize, 0, Window.IconSize)
+			WindowIcon.Size = UDim2.fromOffset(Window.IconSize, Window.IconSize)
 			WindowIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
 			WindowIcon.AnchorPoint = Vector2.new(0.5, 0.5)
 
@@ -1198,17 +1464,23 @@ return function(Config)
 	local iconCopy = Creator.Icon("minimize")
 	local iconSquare = Creator.Icon("maximize")
 
-	local FullscreenButton = Window:CreateTopbarButton(
-		"Fullscreen",
-		Window.Topbar.ButtonsType == "Mac" and "rbxassetid://127426072704909" or "maximize",
-		function()
-			Window:ToggleFullscreen()
-		end,
-		(Window.Topbar.ButtonsType == "Default" and 998 or 999),
-		true,
-		Color3.fromHex("#60C762"),
-		Window.Topbar.ButtonsType == "Mac" and 9 or nil
-	)
+	-- Limbo Hub: the fullscreen/maximize control is opt-in (Topbar.Fullscreen).
+	-- By default the header carries only minimize and close, matching the
+	-- reference; Window:ToggleFullscreen() still works programmatically.
+	local FullscreenButton
+	if Window.Topbar.Fullscreen then
+		FullscreenButton = Window:CreateTopbarButton(
+			"Fullscreen",
+			Window.Topbar.ButtonsType == "Mac" and "rbxassetid://127426072704909" or "maximize",
+			function()
+				Window:ToggleFullscreen()
+			end,
+			(Window.Topbar.ButtonsType == "Default" and 998 or 999),
+			true,
+			Color3.fromHex("#60C762"),
+			Window.Topbar.ButtonsType == "Mac" and 9 or nil
+		)
+	end
 
 	local function SetSize(isAnimation)
 		Tween(Window.UIElements.Main, 0.45, {
@@ -1329,10 +1601,10 @@ return function(Config)
 
 			Window.UIElements.Main.Size = UDim2.new(Window.Size.X.Scale, Window.Size.X.Offset, 0, 100)
 
-			Tween(Window.UIElements.Main, 0.8, {
+			Tween(Window.UIElements.Main, 0.28, {
 				--GroupTransparency = 0,
 				Size = Window.Size,
-			}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+			}, Enum.EasingStyle.Quart, Enum.EasingDirection.Out):Play()
 
 			if Window.UIElements.BackgroundGradient then
 				Tween(Window.UIElements.BackgroundGradient, 0.2, {
@@ -1341,7 +1613,7 @@ return function(Config)
 			end
 
 			Window.UIElements.Main.Background.ImageTransparency = 1
-			Tween(Window.UIElements.Main.Background, 0.4, {
+			Tween(Window.UIElements.Main.Background, 0.22, {
 				--Size = UDim2.new(1, 0, 1, 0),
 				ImageTransparency = Window.Transparent and Config.WindUI.TransparencyValue or 0,
 			}, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out):Play()
@@ -1392,7 +1664,7 @@ return function(Config)
 				Tween(
 					ResizeHandle.ImageLabel,
 					0.45,
-					{ ImageTransparency = 0.8 },
+					{ ImageTransparency = 0.35 },
 					Enum.EasingStyle.Exponential,
 					Enum.EasingDirection.Out
 				):Play()
@@ -1432,10 +1704,10 @@ return function(Config)
 		Window.CanDropdown = false
 		Window.Closed = true
 
-		Tween(Window.UIElements.Main, 0.9, {
+		Tween(Window.UIElements.Main, 0.24, {
 			--GroupTransparency = 1,
 			Size = UDim2.new(Window.Size.X.Scale, Window.Size.X.Offset, 0, 0),
-		}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+		}, Enum.EasingStyle.Quart, Enum.EasingDirection.In):Play()
 		if Window.UIElements.BackgroundGradient then
 			Tween(Window.UIElements.BackgroundGradient, 0.2, {
 				ImageTransparency = 1,
@@ -1486,7 +1758,7 @@ return function(Config)
 		Window.CanResize = false
 
 		task.spawn(function()
-			task.wait(0.4)
+			task.wait(0.26)
 
 			if not Window.Closed then
 				return
@@ -1494,7 +1766,8 @@ return function(Config)
 
 			Window.UIElements.Main.Visible = false
 
-			if Window.OpenButtonMain and not Window.Destroyed and not Window.IsPC and Window.IsOpenButtonEnabled then
+			-- Limbo: allow reopening closed windows on desktop as well as mobile.
+			if Window.OpenButtonMain and not Window.Destroyed and Window.IsOpenButtonEnabled then
 				Window.OpenButtonMain:Visible(true)
 			end
 		end)
@@ -1611,6 +1884,20 @@ return function(Config)
 		Window.CurrentConfig = ConfigModule
 	end
 
+	-- Limbo Hub: drop-in config profile UI (name, picker, save/load, delete,
+	-- autoload) onto any tab or section.
+	function Window:ConfigPanel(Container, Options)
+		if not Container then
+			warn("[ Limbo Hub ] Window:ConfigPanel requires a tab or section container.")
+			return nil
+		end
+
+		local ConfigPanel = require("./ConfigPanel")
+		Options = Options or {}
+		Options.WindUI = Options.WindUI or Config.WindUI
+		return ConfigPanel.New(Window, Container, Options)
+	end
+
 	do
 		local Margin = 40
 		local ViewportSize = CurrentCamera.ViewportSize
@@ -1713,13 +2000,13 @@ return function(Config)
 
 			if TabModule then
 				for _, Container in next, TabModule.Containers do
-					Container.ScrollingFrame.UIPadding.PaddingTop = UDim.new(0, Window.HidePanelBackground and 20 or 10)
+					Container.ScrollingFrame.UIPadding.PaddingTop = UDim.new(0, Window.HidePanelBackground and 6 or 8)
 					Container.ScrollingFrame.UIPadding.PaddingLeft =
-						UDim.new(0, Window.HidePanelBackground and 20 or 10)
+						UDim.new(0, Window.HidePanelBackground and 8 or 10)
 					Container.ScrollingFrame.UIPadding.PaddingRight =
-						UDim.new(0, Window.HidePanelBackground and 20 or 10)
+						UDim.new(0, Window.HidePanelBackground and 8 or 10)
 					Container.ScrollingFrame.UIPadding.PaddingBottom =
-						UDim.new(0, Window.HidePanelBackground and 20 or 10)
+						UDim.new(0, Window.HidePanelBackground and 16 or 18)
 				end
 			end
 		end
@@ -2006,7 +2293,7 @@ return function(Config)
 			initialInputPosition = input.Position
 			--Tween(FullScreenIcon, 0.12, {ImageTransparency = .65}):Play()
 			--Tween(FullScreenIcon.ImageLabel, 0.12, {ImageTransparency = 0}):Play()
-			Tween(ResizeHandle.ImageLabel, 0.1, { ImageTransparency = 0.35 }):Play()
+			Tween(ResizeHandle.ImageLabel, 0.1, { ImageTransparency = 0 }):Play()
 
 			Creator.AddSignal(input.Changed, function()
 				if input.UserInputState == Enum.UserInputState.End then
@@ -2020,7 +2307,7 @@ return function(Config)
 					FullScreenIcon.Active = false
 					--Tween(FullScreenIcon, 0.2, {ImageTransparency = 1}):Play()
 					--Tween(FullScreenIcon.ImageLabel, 0.17, {ImageTransparency = 1}):Play()
-					Tween(ResizeHandle.ImageLabel, 0.17, { ImageTransparency = 0.8 }):Play()
+					Tween(ResizeHandle.ImageLabel, 0.17, { ImageTransparency = 0.35 }):Play()
 				end
 			end)
 		end
@@ -2072,7 +2359,7 @@ return function(Config)
 			return
 		end
 		if not isResizing then
-			Tween(ResizeHandle.ImageLabel, 0.1, { ImageTransparency = 0.35 }):Play()
+			Tween(ResizeHandle.ImageLabel, 0.1, { ImageTransparency = 0 }):Play()
 		end
 	end)
 	Creator.AddSignal(ResizeHandle.MouseLeave, function()
@@ -2080,7 +2367,7 @@ return function(Config)
 			return
 		end
 		if not isResizing then
-			Tween(ResizeHandle.ImageLabel, 0.17, { ImageTransparency = 0.8 }):Play()
+			Tween(ResizeHandle.ImageLabel, 0.17, { ImageTransparency = 0.35 }):Play()
 		end
 	end)
 
@@ -2130,54 +2417,9 @@ return function(Config)
 	-- / Search Bar /
 
 	if not Window.HideSearchBar then
-		local SearchBar = require("../search/Init")
-		local IsOpen = false
-		local CurrentSearchBar
-
-		-- local SearchButton
-		-- SearchButton = Window:CreateTopbarButton("search", function()
-		--     if IsOpen then return end
-
-		--     SearchBar.new(Window.TabModule, Window.UIElements.Main, function()
-		--         -- OnClose
-		--         IsOpen = false
-		--         Window.CanResize = true
-
-		--         Tween(FullScreenBlur, 0.1, {ImageTransparency = 1}):Play()
-		--         FullScreenBlur.Active = false
-		--     end)
-		--     Tween(FullScreenBlur, 0.1, {ImageTransparency = .65}):Play()
-		--     FullScreenBlur.Active = true
-
-		--     IsOpen = true
-		--     Window.CanResize = false
-		-- end, 996)
-
-		local SearchLabel = CreateLabel("Search", "search", Window.UIElements.SideBarContainer, true)
-		SearchLabel.Size = UDim2.new(1, -Window.UIPadding / 2, 0, 39)
-		SearchLabel.Position = UDim2.new(0, Window.UIPadding / 2, 0,--[[Window.UIPadding/2]] 0)
-
-		Creator.AddSignal(SearchLabel.MouseButton1Click, function()
-			if IsOpen then
-				return
-			end
-
-			SearchBar.new(Window.TabModule, Window.UIElements.Main, function()
-				-- OnClose
-				IsOpen = false
-				if Window.Resizable then
-					Window.CanResize = true
-				end
-
-				Tween(FullScreenBlur, 0.1, { ImageTransparency = 1 }):Play()
-				FullScreenBlur.Active = false
-			end)
-			Tween(FullScreenBlur, 0.1, { ImageTransparency = 0.65 }):Play()
-			FullScreenBlur.Active = true
-
-			IsOpen = true
-			Window.CanResize = false
-		end)
+		-- Limbo Hub: inline sidebar filter instead of WindUI's modal overlay.
+		local SidebarSearch = require("./SidebarSearch")
+		Window.SidebarSearch = SidebarSearch.New(Window)
 	end
 
 	-- / TopBar Edit /

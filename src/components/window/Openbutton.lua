@@ -32,8 +32,9 @@ function OpenButton.New(Window)
 
     local Title = New("TextLabel", {
         Text = Window.Title,
-        TextSize = 17,
-        FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
+		TextSize = 14,
+		FontFace = Font.new(Creator.Font, Enum.FontWeight.SemiBold),
+		TextColor3 = Color3.fromHex("#FFFFFF"),
         BackgroundTransparency = 1,
         AutomaticSize = "XY",
     })
@@ -67,8 +68,11 @@ function OpenButton.New(Window)
 
     local Container = New("Frame", {
         Size = UDim2.new(0,0,0,0),
-        Position = UDim2.new(0.5,0,0,6+44/2),
-        AnchorPoint = Vector2.new(0.5,0.5),
+		-- Limbo launcher: centered vertically on the left edge, safely inset.
+		-- Roblox's GUI safe area sits above the visual viewport center.
+		-- Offset it down so the launcher appears centered in the actual game view.
+		Position = UDim2.new(0, 16, 0.5, 58),
+		AnchorPoint = Vector2.new(0, 0.5),
         Parent = Window.Parent,
         BackgroundTransparency = 1,
         Active = true,
@@ -80,66 +84,49 @@ function OpenButton.New(Window)
         Scale = 1,
     })
 
-    local Button = New("Frame", {
-        Size = UDim2.new(0,0,0,44),
-        AutomaticSize = "X",
+	local Button = New("Frame", {
+		Size = UDim2.fromOffset(44, 44),
+		AutomaticSize = "None",
         Parent = Container,
         Active = false,
-        BackgroundTransparency = .25,
+		BackgroundTransparency = 0,
         ZIndex = 99,
-        BackgroundColor3 = Color3.new(0,0,0),
+		BackgroundColor3 = Color3.fromHex("#141414"),
     }, {
         UIScale,
 	    New("UICorner", {
-            CornerRadius = UDim.new(1,0)
+			CornerRadius = UDim.new(0, 11)
         }),
         New("UIStroke", {
             Thickness = 1,
             ApplyStrokeMode = "Border",
-            Color = Color3.new(1,1,1),
-            Transparency = 0,
+			Color = Color3.fromHex("#FF00E0"),
+			Transparency = 0.15,
         }, {
             New("UIGradient", {
-                Color = ColorSequence.new(Color3.fromHex("40c9ff"), Color3.fromHex("e81cff"))
+				Color = ColorSequence.new(Color3.fromHex("#FF00E0"), Color3.fromHex("#A000FF"))
             })
         }),
-        Drag,
-        Divider,
-        
-        New("UIListLayout", {
-            Padding = UDim.new(0, 4),
-            FillDirection = "Horizontal",
-            VerticalAlignment = "Center",
-        }),
-        
         New("TextButton",{
-            AutomaticSize = "XY",
+			AutomaticSize = "None",
             Active = true,
-            BackgroundTransparency = 1, -- .93
-            Size = UDim2.new(0,0,0,44-(4*2)),
+			BackgroundTransparency = 1,
+			Size = UDim2.fromScale(1, 1),
             --Position = UDim2.new(0,20+16+16+1,0,0),
             BackgroundColor3 = Color3.new(1,1,1),
         }, {
-            New("UICorner", {
-                CornerRadius = UDim.new(1,-4)
+			New("UICorner", {
+				CornerRadius = UDim.new(0, 9)
             }),
             Icon,
-            New("UIListLayout", {
-                Padding = UDim.new(0, Window.UIPadding),
-                FillDirection = "Horizontal",
-                VerticalAlignment = "Center",
-            }),
             Title,
-            New("UIPadding", {
-                PaddingLeft = UDim.new(0,7+4),
-                PaddingRight = UDim.new(0,7+4),
             }),
-        }),
-        New("UIPadding", {
-            PaddingLeft = UDim.new(0,4),
-            PaddingRight = UDim.new(0,4),
-        })
-    })
+            })
+
+            -- Limbo launcher is intentionally icon-only; accessibility text remains on the button.
+            Title.Visible = false
+            Button.TextButton.Text = "Open " .. Window.Title
+            Button.TextButton.TextTransparency = 1
     
     OpenButtonMain.Button = Button
     
@@ -159,7 +146,12 @@ function OpenButton.New(Window)
                 true,
                 Window.IconThemed
             )
-            Icon.Size = UDim2.new(0,22,0,22)
+            local IconSize = (Window.OpenButton and Window.OpenButton.IconSize) or 30
+            -- Limbo Hub: 30px glyph in the 44px launcher (7px breathing room
+            -- per side). 24px left the mark looking lost inside the tile.
+			Icon.Size = UDim2.fromOffset(IconSize, IconSize)
+			Icon.AnchorPoint = Vector2.new(0.5, 0.5)
+			Icon.Position = UDim2.fromScale(0.5, 0.5)
             Icon.LayoutOrder = -1
             Icon.Parent = OpenButtonMain.Button.TextButton
         end
@@ -185,7 +177,8 @@ function OpenButton.New(Window)
         Tween(Button.TextButton, .1, {BackgroundTransparency = 1}):Play()
     end)
     
-    local DragModule = Creator.Drag(Container)
+	-- Accept drag input from the visible launcher and its click surface.
+	local DragModule = Creator.Drag(Container, { Button, Button.TextButton })
     
     
     function OpenButtonMain:Visible(v)
@@ -201,15 +194,15 @@ function OpenButton.New(Window)
             Title = OpenButtonConfig.Title,
             Icon = OpenButtonConfig.Icon,
             Enabled = OpenButtonConfig.Enabled,
-            Position = OpenButtonConfig.Position,
-            OnlyIcon = OpenButtonConfig.OnlyIcon or false,
+			Position = OpenButtonConfig.Position,
+			OnlyIcon = OpenButtonConfig.OnlyIcon ~= false,
             Draggable = OpenButtonConfig.Draggable or nil,
             OnlyMobile = OpenButtonConfig.OnlyMobile,
-            CornerRadius = OpenButtonConfig.CornerRadius or UDim.new(1, 0),
+			CornerRadius = OpenButtonConfig.CornerRadius or UDim.new(0, 11),
             StrokeThickness = OpenButtonConfig.StrokeThickness or 2,
             Scale = OpenButtonConfig.Scale or 1,
-            Color = OpenButtonConfig.Color 
-                or ColorSequence.new(Color3.fromHex("40c9ff"), Color3.fromHex("e81cff")),
+			Color = OpenButtonConfig.Color
+				or ColorSequence.new(Color3.fromHex("#FF00E0"), Color3.fromHex("#A000FF")),
         }
         
         -- wtf lol
@@ -225,27 +218,21 @@ function OpenButton.New(Window)
         end
         
         
-        if OpenButtonModule.Draggable == false and Drag and Divider then
-            Drag.Visible = OpenButtonModule.Draggable
-            Divider.Visible = OpenButtonModule.Draggable
-            
-            if DragModule then
-                DragModule:Set(OpenButtonModule.Draggable)
-            end
-        end
+		-- The whole compact launcher is the drag surface; no separate handle needed.
+		if typeof(OpenButtonModule.Draggable) == "boolean" and DragModule then
+			DragModule:Set(OpenButtonModule.Draggable)
+		end
         
         if OpenButtonModule.Position and Container then
             Container.Position = OpenButtonModule.Position
         end
         
-        if OpenButtonModule.OnlyIcon == true and Title then
+        if Title then
+            -- Compact Limbo launcher stays icon-only. The button's hidden text
+            -- remains available as an accessibility/action label.
             Title.Visible = false
-            Button.TextButton.UIPadding.PaddingLeft = UDim.new(0,7)
-            Button.TextButton.UIPadding.PaddingRight = UDim.new(0,7)
-        elseif OpenButtonModule.OnlyIcon == false then
-            Title.Visible = true
-            Button.TextButton.UIPadding.PaddingLeft = UDim.new(0,7+4)
-            Button.TextButton.UIPadding.PaddingRight = UDim.new(0,7+4)
+            Button.TextButton.Text = "Open " .. (OpenButtonModule.Title or Window.Title)
+            Button.TextButton.TextTransparency = 1
         end
         
         --OpenButtonMain:Visible((not OpenButtonModule.OnlyMobile) or (not Window.IsPC))

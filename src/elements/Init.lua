@@ -38,6 +38,12 @@ return {
 				local _elementInstance, content = module:New(config)
 
 				if config.Flag and typeof(config.Flag) == "string" then
+					-- Limbo Hub: keep a window-wide flag registry so EVERY config
+					-- profile can save/load these elements, not just whichever
+					-- config happened to be current when they were created.
+					Window.Flags = Window.Flags or {}
+					Window.Flags[config.Flag] = content
+
 					if Window.CurrentConfig then
 						Window.CurrentConfig:Register(config.Flag, content)
 
@@ -100,14 +106,28 @@ return {
 
 						table.remove(Window.AllElements, config.GlobalIndex)
 						table.remove(tbl.Elements, config.Index)
-						table.remove(Tab.Elements, config.Index)
+						if Tab and Tab ~= tbl then
+							for i, entry in ipairs(Tab.Elements) do
+								if entry == content then
+									table.remove(Tab.Elements, i)
+									break
+								end
+							end
+						elseif Tab then
+							table.remove(Tab.Elements, config.Index)
+						end
 						tbl:UpdateAllElementShapes(tbl)
 					end
 				end
 
-				Window.AllElements[config.Index] = content
+				-- Index is scoped to the owning container (tab OR section), so it
+				-- must never be used as a key into the window/tab-wide lists —
+				-- section children would overwrite unrelated tab entries.
+				Window.AllElements[config.GlobalIndex] = content
 				tbl.Elements[config.Index] = content
-				if Tab then
+				if Tab and Tab ~= tbl then
+					table.insert(Tab.Elements, content)
+				elseif Tab then
 					Tab.Elements[config.Index] = content
 				end
 

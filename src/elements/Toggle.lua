@@ -36,6 +36,7 @@ function Element:New(Config)
 		Index = Config.Index,
 		ElementTable = Toggle,
 		ParentConfig = Config,
+		Size = Config.Size,
 		Tags = Config.Tags,
 	})
 

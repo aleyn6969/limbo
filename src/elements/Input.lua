@@ -41,6 +41,7 @@ function Element:New(Config)
 		Window = Config.Window,
 		ElementTable = Input,
 		ParentConfig = Config,
+		Size = Config.Size,
 		Tags = Config.Tags,
 	})
 

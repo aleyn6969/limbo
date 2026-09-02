@@ -137,8 +137,11 @@ return function(Config)
 		return New("TextLabel", {
 			BackgroundTransparency = 1,
 			Text = Title or "",
-			TextSize = Type == "Desc" and 15 or 17,
-			TextXAlignment = "Left",
+			TextSize = Type == "Desc" and 11 or 13,
+			-- Adds leading between wrapped lines so long titles/descriptions
+			-- don't collide. Single-line labels are unaffected.
+			LineHeight = 1.25,
+			TextXAlignment = Element.Justify == "Center" and "Center" or "Left",
 			ThemeTag = {
 				TextColor3 = not Element.Color and ("Element" .. Type) or nil,
 			},
@@ -147,7 +150,7 @@ return function(Config)
 			TextWrapped = true,
 			Size = UDim2.new(Element.Justify == "Between" and 1 or 0, 0, 0, 0),
 			AutomaticSize = Element.Justify == "Between" and "Y" or "XY",
-			FontFace = Font.new(Creator.Font, Type == "Desc" and Enum.FontWeight.Medium or Enum.FontWeight.SemiBold),
+			FontFace = Font.new(Creator.Font, Type == "Desc" and Enum.FontWeight.Medium or Enum.FontWeight.Bold),
 		})
 	end
 
@@ -219,7 +222,8 @@ return function(Config)
 					),
 				}),
 				New("UIListLayout", {
-					Padding = UDim.new(0, 6),
+					-- Limbo Hub: tighter title/description leading (was 6px).
+					Padding = UDim.new(0, 3),
 					FillDirection = "Vertical",
 					VerticalAlignment = "Center",
 					HorizontalAlignment = "Left",
@@ -287,7 +291,7 @@ return function(Config)
 
 	local LockedTitle = New("TextLabel", {
 		Text = "Locked",
-		TextSize = 18,
+		TextSize = 13,
 		FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
 		AutomaticSize = "XY",
 		BackgroundTransparency = 1,
@@ -301,6 +305,17 @@ return function(Config)
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(0.5, 0, 0.5, 0),
 		ZIndex = 9999999,
+	})
+
+	-- Limbo Hub: hover fills must paint BEHIND the title/description (which sit
+	-- at ZIndex 1). Sharing ElementFullFrame's ZIndex made the opaque hover
+	-- colour cover the label, so text appeared to vanish on mouse-over.
+	local ElementHoverFrame = New("Frame", {
+		Size = UDim2.new(1, Element.UIPadding * 2, 1, Element.UIPadding * 2),
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.5, 0),
+		ZIndex = 0,
 	})
 
 	local Locked, LockedTable = NewRoundFrame(Element.UICorner, "Squircle", {
@@ -361,31 +376,9 @@ return function(Config)
 		Visible = false,
 		Active = false,
 		ThemeTag = {
-			ImageColor3 = "Text",
+			ImageColor3 = "Outline",
 		},
-		Parent = ElementFullFrame,
-	}, {
-		New("UIListLayout", {
-			FillDirection = "Horizontal",
-			VerticalAlignment = "Center",
-			HorizontalAlignment = "Center",
-			Padding = UDim.new(0, 8),
-		}),
-		New("UIGradient", {
-			Name = "HoverGradient",
-			Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
-				ColorSequenceKeypoint.new(0.5, Color3.new(1, 1, 1)),
-				ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1)),
-			}),
-			Transparency = NumberSequence.new({
-				NumberSequenceKeypoint.new(0, 1),
-				NumberSequenceKeypoint.new(0.25, 0.9),
-				NumberSequenceKeypoint.new(0.5, 0.3),
-				NumberSequenceKeypoint.new(0.75, 0.9),
-				NumberSequenceKeypoint.new(1, 1),
-			}),
-		}),
+		Parent = ElementHoverFrame,
 	}, nil, true)
 
 	local Hover, HoverTable = NewRoundFrame(Element.UICorner, "Squircle", {
@@ -393,25 +386,10 @@ return function(Config)
 		ImageTransparency = 1, -- 0.88
 		Active = false,
 		ThemeTag = {
-			ImageColor3 = "Text",
+			ImageColor3 = "ElementBackgroundHover",
 		},
-		Parent = ElementFullFrame,
+		Parent = ElementHoverFrame,
 	}, {
-		New("UIGradient", {
-			Name = "HoverGradient",
-			Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
-				ColorSequenceKeypoint.new(0.5, Color3.new(1, 1, 1)),
-				ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1)),
-			}),
-			Transparency = NumberSequence.new({
-				NumberSequenceKeypoint.new(0, 1),
-				NumberSequenceKeypoint.new(0.25, 0.9),
-				NumberSequenceKeypoint.new(0.5, 0.3),
-				NumberSequenceKeypoint.new(0.75, 0.9),
-				NumberSequenceKeypoint.new(1, 1),
-			}),
-		}),
 		New("UIListLayout", {
 			FillDirection = "Horizontal",
 			VerticalAlignment = "Center",
@@ -438,6 +416,7 @@ return function(Config)
 			Creator.Colors[Element.Color]
 		) or typeof(Element.Color) == "Color3" and Element.Color) or nil,
 	}, {
+		ElementHoverFrame,
 		Element.UIElements.Container,
 		ElementFullFrame,
 		New("UIPadding", {
@@ -454,15 +433,8 @@ return function(Config)
 	if Element.Hover then
 		Creator.AddSignal(Main.MouseEnter, function()
 			if CanHover then
-				--Tween(Main, 0.12, { ImageTransparency = Element.Color and 0.15 or 0.9 }):Play()
-				Tween(Hover, 0.12, { ImageTransparency = 0.9 }):Play()
-				Tween(HoverOutline, 0.12, { ImageTransparency = 0.8 }):Play()
-				Creator.AddSignal(Main.MouseMoved, function(x, y)
-					Hover.HoverGradient.Offset =
-						Vector2.new(((x - Main.AbsolutePosition.X) / Main.AbsoluteSize.X) - 0.5, 0)
-					HoverOutline.HoverGradient.Offset =
-						Vector2.new(((x - Main.AbsolutePosition.X) / Main.AbsoluteSize.X) - 0.5, 0)
-				end)
+				Tween(Hover, 0.12, { ImageTransparency = 0 }):Play()
+				Tween(HoverOutline, 0.12, { ImageTransparency = 0.45 }):Play()
 			end
 		end)
 		Creator.AddSignal(Main.InputEnded, function()

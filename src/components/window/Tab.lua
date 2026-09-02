@@ -59,10 +59,12 @@ function TabModule.New(Config, UIScale)
 		ContainerFrame = nil,
 		UICorner = Window.UICorner - (Window.UIPadding / 2),
 
-		Gap = Window.NewElements and 1 or 6,
+		Gap = Window.NewElements and 1 or 4,
 
-		TabPaddingX = 4 + (Window.UIPadding / 2),
-		TabPaddingY = 3 + (Window.UIPadding / 2),
+		TabPaddingX = 10,
+		-- Compact desktop navigation: 13px text + 9px vertical padding gives a
+		-- 34px row while preserving a comfortable mouse target.
+		TabPaddingY = 9,
 		TitlePaddingY = 0,
 	}
 
@@ -87,7 +89,8 @@ function TabModule.New(Config, UIScale)
 
 	Tab.UIElements.Main = Creator.NewRoundFrame(Tab.UICorner, "Squircle", {
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, -7, 0, 0),
+		-- Counter the sidebar scroll canvas width so the visual tab keeps an 8px right inset.
+		Size = UDim2.new(1, -16, 0, 0),
 		AutomaticSize = "Y",
 		Parent = Config.Parent,
 		ThemeTag = {
@@ -95,6 +98,18 @@ function TabModule.New(Config, UIScale)
 		},
 		ImageTransparency = 1,
 	}, {
+		-- Limbo Hub: magenta capsule indicator pinned to the left edge.
+		Creator.NewRoundFrame(99, "Squircle", {
+			Size = UDim2.new(0, 3, 0, 0),
+			Position = UDim2.new(0, -1, 0.5, 0),
+			AnchorPoint = Vector2.new(0, 0.5),
+			ImageTransparency = 1,
+			ZIndex = 5,
+			Name = "Indicator",
+			ThemeTag = {
+				ImageColor3 = "TabIndicator",
+			},
+		}),
 		Creator.NewRoundFrame(Tab.UICorner - 1, "Glass-1.4", {
 			Size = UDim2.new(1, 1, 1, 1),
 			ThemeTag = {
@@ -140,9 +155,11 @@ function TabModule.New(Config, UIScale)
 					TextColor3 = "TabTitle",
 				},
 				TextTransparency = not Tab.Locked and 0.4 or 0.7,
-				TextSize = 15,
+				-- Limbo Hub: nav labels sit on the same 13px ramp as row titles.
+				TextSize = 13,
+				LineHeight = 1.25,
 				Size = UDim2.new(1, 0, 0, 0),
-				FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
+				FontFace = Font.new(Creator.Font, Enum.FontWeight.SemiBold),
 				TextWrapped = true,
 				RichText = true,
 				AutomaticSize = "Y",
@@ -263,10 +280,14 @@ function TabModule.New(Config, UIScale)
 		ScrollingDirection = "Y",
 	}, {
 		New("UIPadding", {
-			PaddingTop = UDim.new(0, not Window.HidePanelBackground and 20 or 10),
-			PaddingLeft = UDim.new(0, not Window.HidePanelBackground and 20 or 10),
-			PaddingRight = UDim.new(0, not Window.HidePanelBackground and 20 or 10),
-			PaddingBottom = UDim.new(0, not Window.HidePanelBackground and 20 or 10),
+			-- Limbo: compact pane insets keep the first section close to the
+			-- header rule while preserving horizontal breathing room.
+			PaddingTop = UDim.new(0, not Window.HidePanelBackground and 8 or 6),
+			PaddingLeft = UDim.new(0, not Window.HidePanelBackground and 10 or 8),
+			PaddingRight = UDim.new(0, not Window.HidePanelBackground and 10 or 8),
+			-- Extra bottom inset reserves room for the corner resize grip so the
+			-- last element in a scrolled list is never covered by it.
+			PaddingBottom = UDim.new(0, not Window.HidePanelBackground and 18 or 16),
 		}),
 		New("UIListLayout", {
 			SortOrder = "LayoutOrder",
@@ -306,10 +327,12 @@ function TabModule.New(Config, UIScale)
 				ThemeTag = {
 					TextColor3 = "Text",
 				},
-				TextSize = 20,
+				-- Limbo Hub: page heading sits one step above body text (15px),
+				-- not the 20px WindUI used.
+				TextSize = 15,
 				TextTransparency = 0.1,
 				Size = UDim2.new(0, 0, 1, 0),
-				FontFace = Font.new(Creator.Font, Enum.FontWeight.SemiBold),
+				FontFace = Font.new(Creator.Font, Enum.FontWeight.Bold),
 				--TextTruncate = "AtEnd",
 				RichText = true,
 				LayoutOrder = 2,
@@ -545,7 +568,7 @@ function TabModule.New(Config, UIScale)
 				ThemeTag = {
 					TextColor3 = "Text",
 				},
-				TextSize = 18,
+				TextSize = 15,
 				TextTransparency = 0.5,
 				BackgroundTransparency = 1,
 				FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
@@ -556,7 +579,7 @@ function TabModule.New(Config, UIScale)
 				ThemeTag = {
 					TextColor3 = "Text",
 				},
-				TextSize = 15,
+				TextSize = 12,
 				TextTransparency = 0.65,
 				BackgroundTransparency = 1,
 				FontFace = Font.new(Creator.Font, Enum.FontWeight.Regular),
@@ -598,6 +621,13 @@ function TabModule:SelectTab(TabIndex)
 				Creator.SetThemeTag(TabObject.UIElements.Main.Frame.TextLabel, {
 					TextTransparency = "TabTextTransparency",
 				}, 0.15)
+				-- Limbo: retract the edge indicator
+				if TabObject.UIElements.Main:FindFirstChild("Indicator") then
+					Creator.Tween(TabObject.UIElements.Main.Indicator, 0.18, {
+						Size = UDim2.new(0, 3, 0, 0),
+						ImageTransparency = 1,
+					}, Enum.EasingStyle.Quart, Enum.EasingDirection.Out):Play()
+				end
 				if TabObject.UIElements.Icon and not TabObject.IconColor then
 					Creator.SetThemeTag(TabObject.UIElements.Icon.ImageLabel, {
 						ImageTransparency = "TabIconTransparency",
@@ -618,6 +648,13 @@ function TabModule:SelectTab(TabIndex)
 		Creator.SetThemeTag(TabModule.Tabs[TabIndex].UIElements.Main.Frame.TextLabel, {
 			TextTransparency = "TabTextTransparencyActive",
 		}, 0.15)
+		-- Limbo: extend the edge indicator on the newly selected tab
+		if TabModule.Tabs[TabIndex].UIElements.Main:FindFirstChild("Indicator") then
+			Creator.Tween(TabModule.Tabs[TabIndex].UIElements.Main.Indicator, 0.25, {
+				Size = UDim2.new(0, 3, 0.55, 0),
+				ImageTransparency = 0,
+			}, Enum.EasingStyle.Back, Enum.EasingDirection.Out):Play()
+		end
 		if TabModule.Tabs[TabIndex].UIElements.Icon and not TabModule.Tabs[TabIndex].IconColor then
 			Creator.SetThemeTag(TabModule.Tabs[TabIndex].UIElements.Icon.ImageLabel, {
 				ImageTransparency = "TabIconTransparencyActive",
