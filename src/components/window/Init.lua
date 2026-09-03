@@ -1596,7 +1596,7 @@ return function(Config)
 				end)
 			end
 
-			task.wait(0.06)
+			--task.wait(0.06)
 			Window.Closed = false
 
 			Window.UIElements.Main.Size = UDim2.new(Window.Size.X.Scale, Window.Size.X.Offset, 0, 100)
