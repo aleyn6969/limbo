@@ -1786,7 +1786,7 @@ return function(Config)
 
 				Window.Destroyed = true
 
-				task.wait(0.4)
+				--task.wait(0.4)
 
 				Config.WindUI.ScreenGui:Destroy()
 				Config.WindUI.NotificationGui:Destroy()
