@@ -13,7 +13,7 @@ local DialogModule = {
 
 function DialogModule.Create(Key, Type, Window, WindUI, Parent)
 	local Dialog = {
-		UICorner = 28,
+		UICorner = 4,
 		UIPadding = 12,
 
 		Window = Window,
@@ -26,7 +26,7 @@ function DialogModule.Create(Key, Type, Window, WindUI, Parent)
 		Dialog.UIPadding = 0
 	end -- 16
 	if Key then
-		Dialog.UICorner = 26
+		Dialog.UICorner = 4
 	end
 
 	Type = Type or "Dialog"

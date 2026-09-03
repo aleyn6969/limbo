@@ -6,7 +6,7 @@ local Tween = Creator.Tween
 
 function Button.New(Title, Icon, Callback, Variant, Parent, Dialog, FullRounded, Radius)
 	Variant = Variant or "Primary"
-	local Radius = Radius or (not FullRounded and 10 or 999)
+	local Radius = 4 -- Force sharp radius for all buttons (overriding Limbo Hub default 10 or 999)
 	local IconButtonFrame
 	if Icon and Icon ~= "" then
 		IconButtonFrame = New("ImageLabel", {
