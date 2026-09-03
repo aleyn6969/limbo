@@ -2256,7 +2256,7 @@ return function(Config)
 							Callback = function()
 								ClickedClose = false
 							end,
-							Variant = "Secondary",
+							Variant = "NeutralStrong",
 						},
 						{
 							Title = "Close Window",
