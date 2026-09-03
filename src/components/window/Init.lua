@@ -2265,7 +2265,7 @@ return function(Config)
 								ClickedClose = false
 								Window:Destroy()
 							end,
-							Variant = "Primary",
+							Variant = "NeutralStrong",
 						},
 					},
 				})
