@@ -24,8 +24,8 @@ function NotificationModule.Init(Parent)
 	end
 
 	NotModule.Frame = New("Frame", {
-		Position = UDim2.new(1, -116 / 4, 0, 56),
-		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -116 / 4, 1, -56), -- Ubah Y menjadi dari bawah
+		AnchorPoint = Vector2.new(1, 1), -- Ubah anchor dari bawah
 		Size = NotificationModule.Size,
 		Parent = Parent,
 		BackgroundTransparency = 1,
