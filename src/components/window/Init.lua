@@ -2273,7 +2273,7 @@ return function(Config)
 				Window:Destroy()
 			end
 		end
-	end, (Window.Topbar.ButtonsType == "Default" and 999 or 997), nil, Color3.fromHex("#F4695F"))
+	end, (Window.Topbar.ButtonsType == "Default" and 999 or 997), nil, Color3.fromHex("#FF00E0"))
 
 	function Window:Tag(TagConfig)
 		if Window.UIElements.Main.Main.Topbar.Center.Visible == false then
