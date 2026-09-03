@@ -3,8 +3,8 @@ local New = Creator.New
 local Tween = Creator.Tween
 
 local NotificationModule = {
-	Size = UDim2.new(0, 300, 1, -100 - 56),
-	SizeLower = UDim2.new(0, 300, 1, -56),
+	Size = UDim2.new(0, 300, 1, -20),
+	SizeLower = UDim2.new(0, 300, 1, -20),
 	UICorner = 18,
 	UIPadding = 14,
 	--ButtonPadding = 9,
