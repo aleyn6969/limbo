@@ -18,6 +18,7 @@ function Element:New(Config)
 		Icon = Config.Icon or nil,
 		IconSize = Config.IconSize or 23, -- from 26 to 0
 		Type = Config.Type or "Toggle",
+		Color = Config.Color or nil,
 		Callback = Config.Callback or function() end,
 		UIElements = {},
 	}
@@ -72,7 +73,8 @@ function Element:New(Config)
 			Toggle.ToggleFrame.UIElements.Main,
 			Toggle.Callback,
 			Config.Window.NewElements,
-			Config
+			Config,
+			Toggle.Color
 		)
 	elseif Toggle.Type == "Checkbox" then
 		ToggleFrame, ToggleFunc = CreateCheckbox(

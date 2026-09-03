@@ -6,7 +6,7 @@ local Tween = Creator.Tween
 
 local UserInputService = game:GetService("UserInputService")
 
-function Toggle.New(Value, Icon, IconSize, Parent, Callback, NewElement, Config)
+function Toggle.New(Value, Icon, IconSize, Parent, Callback, NewElement, Config, CustomColor)
 	local Toggle = {
 		GlassSpritesheet = {
 			Id = "rbxassetid://77297718671545",
@@ -77,9 +77,10 @@ function Toggle.New(Value, Icon, IconSize, Parent, Callback, NewElement, Config)
 		Creator.NewRoundFrame(Radius, "Squircle", {
 			Size = UDim2.new(1, 0, 1, 0),
 			Name = "Layer",
-			ThemeTag = {
+			ThemeTag = CustomColor and nil or {
 				ImageColor3 = "Toggle",
 			},
+			ImageColor3 = CustomColor,
 			ImageTransparency = 1, -- 0
 		}),
 		Creator.NewRoundFrame(Radius, "SquircleOutline", {
@@ -188,7 +189,13 @@ function Toggle.New(Value, Icon, IconSize, Parent, Callback, NewElement, Config)
 				Tween(ToggleFrame.Frame, 0.35, {
 					Position = UDim2.new(0, ToggleWidth - FrameWidth - 2, 0.5, 0),
 				}, Enum.EasingStyle.Back, Enum.EasingDirection.Out):Play()
-				Creator.SetThemeTag(ToggleFrame.Frame.Bar.Highlight.Glass, { ImageColor3 = "Toggle" }, 0.15)
+				if CustomColor then
+					Tween(ToggleFrame.Frame.Bar.Highlight.Glass, 0.15, {
+						ImageColor3 = CustomColor,
+					}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+				else
+					Creator.SetThemeTag(ToggleFrame.Frame.Bar.Highlight.Glass, { ImageColor3 = "Toggle" }, 0.15)
+				end
 
 				Tween(
 					ToggleFrame.Frame.Bar.Highlight.Glass,
@@ -222,7 +229,13 @@ function Toggle.New(Value, Icon, IconSize, Parent, Callback, NewElement, Config)
 			Tween(ToggleFrame.Layer, 0.1, {
 				ImageTransparency = 0,
 			}):Play()
-			Creator.SetThemeTag(ToggleFrame.Frame.Bar.Highlight.Glass, { ImageColor3 = "Toggle" }, 0.1)
+			if CustomColor then
+				Tween(ToggleFrame.Frame.Bar.Highlight.Glass, 0.1, {
+					ImageColor3 = CustomColor,
+				}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+			else
+				Creator.SetThemeTag(ToggleFrame.Frame.Bar.Highlight.Glass, { ImageColor3 = "Toggle" }, 0.1)
+			end
 			Tween(
 				ToggleFrame.Frame.Bar.Highlight.Glass,
 				0.1,
