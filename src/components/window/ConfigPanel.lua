@@ -92,7 +92,7 @@ function ConfigPanel.New(Window, Container, Options)
 
 	Panel.UIElements.Name = Container:Input({
 		Title = "Config Name",
-		Size = "Large",
+		--Size = "Large", -- Hapus size large agar tidak keliatan terlalu bulky (box dalam box)
 		Placeholder = "my-config",
 		Callback = function(value)
 			local clean = SanitizeName(value)
@@ -106,7 +106,7 @@ function ConfigPanel.New(Window, Container, Options)
 
 	Panel.UIElements.Existing = Container:Dropdown({
 		Title = "Existing Configs",
-		Size = "Large",
+		--Size = "Large", -- Hapus size large agar seragam
 		Values = ListConfigs(),
 		Value = nil,
 		AllowNone = true,
@@ -123,7 +123,7 @@ function ConfigPanel.New(Window, Container, Options)
 		end,
 	})
 
-	-- / Save | Load /
+	-- / Action Buttons Row (Save, Load, Delete in one row) /
 	-- Breathing room between the "what profile" fields and the actions that
 	-- operate on them.
 	Container:Space({})
@@ -190,9 +190,9 @@ function ConfigPanel.New(Window, Container, Options)
 		end,
 	})
 
-	-- / Delete Config /
+	-- / Delete Config (Moved into Row) /
 
-	Panel.UIElements.Delete = Container:Button({
+	Panel.UIElements.Delete = Row:Button({
 		Title = "Delete Config",
 		Icon = false,
 		Justify = "Center",
@@ -227,7 +227,7 @@ function ConfigPanel.New(Window, Container, Options)
 
 	Panel.UIElements.AutoLoad = Container:Toggle({
 		Title = "Auto Load",
-		Size = "Large",
+		--Size = "Large", -- Hapus size large agar seragam
 		Default = false,
 		Callback = function(state)
 			local name = ResolveSelectedName()
